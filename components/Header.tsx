@@ -21,7 +21,7 @@ export default function Header() {
               animate={{ y: 0, opacity: 1 }}
             >
               <Link
-                className="flex w-full items-center justify-center px-3  hover:text-gray-950 transition dark:text-gray-500 dark:hover:text-gray-600"
+                className="flex w-full items-center justify-center px-3  hover:text-gray-950 transition dark:text-gray-900 dark:hover:text-gray-600"
                 href={link.hash}
               >
                 {link.name}

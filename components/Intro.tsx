@@ -1,22 +1,32 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { BsArrowRight, BsLinkedin } from "react-icons/bs";
+import { BiCode, BiDownArrow, BiDownload } from "react-icons/bi";
+import { BsArrowRight, BsGithub, BsLinkedin, BsMailbox } from "react-icons/bs";
+import { CgMail } from "react-icons/cg";
 import { FaGitSquare } from "react-icons/fa";
+import { FaLinkedinIn } from "react-icons/fa6";
 import { HiDownload } from "react-icons/hi";
 
 export default function Intro() {
   return (
-    <section className="mb-28 max-w-[50rem] text-center sm:mb-0">
-      <div className="flex items-center justify-center">Photo</div>
+    <section className="my-24  max-w-[60rem]  h-[600px] text-center sm:mb-0">
       <motion.p
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mb-10 mt-4 px-4 text-2xl font-medium sm:text-4xl"
+        className="mb-10 mt-12 px-4 font-medium  "
       >
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt veniam
-        nobis reprehenderit ut officiis, aliquid sit accusamus animi nam
-        voluptatum enim qui cumque facilis.
+        <p className="italic text-[20px] text-gray-700">
+          <span className="text-4xl">I'm Aakash Tyagi</span>. As a recent 2024
+          graduate, I'm eager to apply my expertise in the MERN stack, including
+          TypeScript and Next.js 14, to an entry-level role. My solid foundation
+          in data structures and algorithms, coupled with hands-on experience,
+          enables me to develop efficient solutions. I've demonstrated my
+          problem-solving skills through participation in hackathons, including
+          the Smart India Hackathon, where we were finalists, and the
+          Maharashtra Innovation Challenge, where we emerged as winners at the
+          district level.
+        </p>
       </motion.p>
       <motion.div
         initial={{ y: 100, opacity: 0 }}
@@ -24,34 +34,56 @@ export default function Intro() {
         transition={{
           delay: 0.1,
         }}
-        className="flex flex-col sm:flex-row justify-center items-center gap-2 px-4 text-lg font-medium"
+        className="flex flex-col sm:flex-row justify-center items-center gap-4 px-4 text-lg font-medium flex-wrap"
       >
-        <Link
-          href={"#contact"}
-          className="group bg-gray-900 text-white px-7 py-3 flex items-center gap-2 rounded-full outline-none hover:focus:scale-110 hover:bg-gray-950 active:scale-105 transition-all"
-        >
-          Contact me
-          <BsArrowRight className="opacity-75 group-hover:translate-x-1 transition-alls" />
-        </Link>
         <a
+          className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
           href="/CV.pdf"
           download
-          className="group bg-white  px-7 py-3 flex items-center gap-2 rounded-full outline-none hover:focus:scale-110 active:scale-105 transition-all border border-black/10"
         >
           Download CV{" "}
-          <HiDownload className="opacity-60 group-hover:translate-y-1 transition-all" />{" "}
+          <HiDownload className="opacity-60 group-hover:translate-y-1 transition" />
         </a>
         <a
-          target="_blank"
-          className="bg-white  p-4 text-gray-700 flex items-center gap-2 rounded-full hover:scale-[1.15] hover:text-gray-950 hover:focus:scale-110 cursor-pointer active:scale-105 transition-all border border-black/10"
+          className="group bg-white text-white border border-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
+          href="/CV.pdf"
+          download
         >
-          <BsLinkedin />
+          Contact Us{" "}
+          <HiDownload className="opacity-60 group-hover:translate-y-1 transition" />
         </a>
         <a
-          target="_blank"
-          className="bg-white  p-4 text-gray-700 text-[1.3rem] flex items-center gap-2  hover:scale-[1.15] hover:text-gray-950 rounded-full cursor-pointer hover:focus:scale-110 active:scale-105 transition-all border border-black/10"
+          className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
+          href="/CV.pdf"
+          download
         >
-          <FaGitSquare />
+          LinkedIn{" "}
+          <FaLinkedinIn className="opacity-60 group-hover:translate-y-1 transition" />
+        </a>
+      </motion.div>
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{
+          delay: 0.1,
+        }}
+        className="flex mt-4 sm:mt-8 flex-col sm:flex-row justify-center items-center gap-4 px-4 text-lg font-medium flex-wrap"
+      >
+        <a
+          className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
+          href="/CV.pdf"
+          download
+        >
+          GitHub{" "}
+          <BsGithub className="opacity-60 group-hover:translate-y-1 transition" />
+        </a>
+        <a
+          className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
+          href="/CV.pdf"
+          download
+        >
+          Leetcode{" "}
+          <BiCode className="opacity-60 group-hover:translate-y-1 transition" />
         </a>
       </motion.div>
     </section>

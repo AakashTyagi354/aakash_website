@@ -17,11 +17,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-50 text-gray-950 relative h-[4000px] pt-28 sm:pt-36`}>
-        <div className="bg-[#eadada] absolute top-[-6rem] right-[11rem] h-[31.25rem] -z-10 w-[31.25rem] rounded-full blur-[10rem] sm:w-[68.75rem]"></div>
-        <div className="bg-[#eadada] absolute top-[-1rem] left-[-35rem] h-[31.25rem] w-[50rem] -z-10 rounded-full blur-[10rem] sm:w-[68.75rem] md:left-[-33rem] lg:left-[-28rem] xl:left-[-15rem] 2xl:left-[-5rem]"></div>
+      <body
+        className={`${inter.className} bg-gray-50 text-gray-950 relative h-[4000px] pt-28 sm:pt-36`}
+      >
         <Header />
-        {children}
+        <div className="bg-[#101820FF] opacity-40  fixed top-[100px] left-0 blur-[10rem]     h-[40.25rem] w-[21.25rem] rounded-full sm:w-[68.75rem] z-0"></div>
+        <div className="bg-[#101820FF] opacity-40  fixed top-[100px] right-0  blur-[10rem]    h-[40.25rem] w-[21.25rem] rounded-full sm:w-[68.75rem] z-0"></div>
+        <div className="relative z-10">{children}</div>
       </body>
     </html>
   );
