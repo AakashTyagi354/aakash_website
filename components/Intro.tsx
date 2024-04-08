@@ -1,4 +1,6 @@
 "use client";
+
+import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { BiCode, BiDownArrow, BiDownload } from "react-icons/bi";
@@ -10,22 +12,22 @@ import { HiDownload } from "react-icons/hi";
 
 export default function Intro() {
   return (
-    <section className="my-24  max-w-[60rem]  h-[600px] text-center sm:mb-0">
+    <section className="my-24 max-w-[60rem] h-[600px] text-center sm:mb-0">
       <motion.p
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mb-10 mt-12 px-4 font-medium  "
+        className="mb-10 mt-12 px-4 font-medium"
       >
         <p className="italic text-[20px] text-gray-700">
-          <span className="text-4xl">I'm Aakash Tyagi</span>. As a recent 2024
-          graduate, I'm eager to apply my expertise in the MERN stack, including
-          TypeScript and Next.js 14, to an entry-level role. My solid foundation
-          in data structures and algorithms, coupled with hands-on experience,
-          enables me to develop efficient solutions. I've demonstrated my
-          problem-solving skills through participation in hackathons, including
-          the Smart India Hackathon, where we were finalists, and the
-          Maharashtra Innovation Challenge, where we emerged as winners at the
-          district level.
+          <span className="text-4xl">I&apos;m Aakash Tyagi</span>. As a recent
+          2024 graduate, I&apos;m eager to apply my expertise in the MERN stack,
+          including TypeScript and Next.js 14, to an entry-level role. My solid
+          foundation in data structures and algorithms, coupled with hands-on
+          experience, enables me to develop efficient solutions. I&apos;ve
+          demonstrated my problem-solving skills through participation in
+          hackathons, including the Smart India Hackathon, where we were
+          finalists, and the Maharashtra Innovation Challenge, where we emerged
+          as winners at the district level.
         </p>
       </motion.p>
       <motion.div
@@ -38,7 +40,6 @@ export default function Intro() {
       >
         <a
           className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
-          href="/CV.pdf"
           download
         >
           Download CV{" "}
@@ -46,7 +47,6 @@ export default function Intro() {
         </a>
         <a
           className="group bg-white text-white border border-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
-          href="/CV.pdf"
           download
         >
           Contact Us{" "}
@@ -54,7 +54,6 @@ export default function Intro() {
         </a>
         <a
           className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"
-          href="/CV.pdf"
           download
         >
           LinkedIn{" "}
