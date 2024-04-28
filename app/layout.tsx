@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +19,6 @@ export default function RootLayout({
       <body
         className={`${inter.className} bg-gray-50 text-gray-950 relative h-[4000px] pt-28 sm:pt-36`}
       >
-        <Header />
         <div className="bg-[#00203FFF] opacity-40  fixed top-[100px] left-0 blur-[10rem]     h-[40.25rem] w-[21.25rem] rounded-full sm:w-[68.75rem] z-0"></div>
         <div className="bg-[#F2AA4CFF] opacity-40  fixed top-[100px] right-0  blur-[10rem]    h-[40.25rem] w-[21.25rem] rounded-full sm:w-[68.75rem] z-0"></div>
         <div className="relative z-10">{children}</div>
