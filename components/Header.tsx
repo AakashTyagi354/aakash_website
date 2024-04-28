@@ -28,12 +28,16 @@ export default function Header() {
               Skills
             </p>
           </a>
-          <p className="text-gray-600 tracking-wide cursor-pointer text-sm">
-            Projects
-          </p>
-          <p className="text-gray-600 tracking-wide cursor-pointer text-sm">
-            Contact
-          </p>
+          <a href="#projects">
+            <p className="text-gray-600 tracking-wide cursor-pointer text-sm">
+              Projects
+            </p>
+          </a>
+          <a href="#contact">
+            <p className="text-gray-600 tracking-wide cursor-pointer text-sm">
+              Contact
+            </p>
+          </a>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

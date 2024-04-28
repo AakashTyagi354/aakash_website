@@ -32,7 +32,7 @@ export default function Skills() {
       <ul className="flex flex-wrap justify-center gap-2 text-lg text-gray-800 mt-16">
         {skillsData.map((skill, index) => (
           <motion.li
-            className="bg-gray-100 borderBlack my-2  rounded-xl px-5 py-3 dark:bg-white/10 dark:text-white/80"
+            className="bg-[#444546] borderBlack my-2  text-white rounded-xl px-5 py-3 dark:bg-white/10 dark:text-white/80"
             key={index}
             variants={fadeInAnimationVariants}
             initial="initial"
