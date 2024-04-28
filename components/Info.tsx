@@ -5,7 +5,7 @@ import { FaCode } from "react-icons/fa";
 import { FaTwitter } from "react-icons/fa";
 export default function Info() {
   return (
-    <div className="flex pt-[100px]  h-full w-[60%] mx-auto flex-col">
+    <div className="flex pt-[100px]  h-full w-[60%] mx-auto flex-col" >
       <div className="flex items-center w-full ">
         <p className="text-4xl text-gray-600 tracking-widest font-mono">
           I'M AAKASH TYAGI

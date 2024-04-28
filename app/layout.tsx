@@ -36,7 +36,7 @@ export default function RootLayout({
           </div>
           <div className="relative z-10">
             <Header />
-            <main className="mt-[120px]">{children}</main>
+            <main >{children}</main>
           </div>
         </ThemeProvider>
       </body>
