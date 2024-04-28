@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,13 +18,27 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.className} bg-gray-50 text-gray-950 relative h-[4000px] pt-28 sm:pt-36`}
-      >
-        <Header />
-        <div className="bg-[#00203FFF] opacity-40  fixed top-[100px] left-0 blur-[10rem]     h-[40.25rem] w-[21.25rem] rounded-full sm:w-[68.75rem] z-0"></div>
-        <div className="bg-[#F2AA4CFF] opacity-40  fixed top-[100px] right-0  blur-[10rem]    h-[40.25rem] w-[21.25rem] rounded-full sm:w-[68.75rem] z-0"></div>
-        <div className="relative z-10">{children}</div>
+      <body className={`${inter.className} h-[3000px] relative`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="absolute inset-0  ">
+            <div className="bg-[#FEF0F5] opacity-60 blur-3xl   fixed top-[80px] right-0     h-[300px] w-[600px] rounded-full  z-0"></div>
+            <div className="bg-[#FEF0F5] opacity-40 blur-3xl   fixed top-[100px] left-0     h-[300px] w-[600px] rounded-full  z-0"></div>
+            <div className="bg-[#eaf2e8] opacity-40  blur-3xl  fixed top-[500px] right-0     h-[300px] w-[600px] rounded-full  z-0"></div>
+
+            <p className="fixed left-[-40px] top-[620px] font-medium text-[160px]   text-gray-300 opacity-25 ">
+              Aakash.
+            </p>
+          </div>
+          <div className="relative z-10">
+            <Header />
+            <main className="mt-[120px]">{children}</main>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
