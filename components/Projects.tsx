@@ -17,7 +17,7 @@ export default function Projects() {
   return (
     <section className="scroll-mt-28 mb-28 w-[75%] mx-auto mt-52">
   
-      <p className="text-4xl pl-[12px] text-gray-600 tracking-widest font-mono">
+      <p className=" text-2xl md:text-4xl pl-[12px] text-gray-600 tracking-widest font-mono">
         My Projects
       </p>
       <div className="my-12 flex justify-end">

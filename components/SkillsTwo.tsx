@@ -25,17 +25,17 @@ export default function SkillsTwo() {
   return (
     <section
       id="skills"
-      className=" w-[70%]  mx-auto  h-full flex flex-col items-center justify-center pt-[100px]"
+      className=" w-[70%]  mx-auto  h-full flex flex-col items-center justify-center pt-[150px] md:pt-[100px]"
     >
       <div className="w-full">
-        <p className="text-4xl text-gray-600 tracking-widest font-mono">
+        <p className=" text-2xl md:text-4xl text-gray-600 tracking-widest font-mono">
           My Skills
         </p>
       </div>
-      <ul className="grid grid-cols-3  justify-center gap-2 text-lg text-gray-800 mt-16 ">
+      <ul className="grid grid-cols-1 md:grid-cols-3  justify-center gap-2 text-lg text-gray-800 mt-16 ">
         {skillsData.map((skill, index) => (
           <motion.li
-            className="border  h-[60px] w-[300px] rounded-md shadow-sm mx-8  mt-2 "
+            className="border  h-[60px] w-[300px] rounded-md shadow-sm md:mx-8  mt-2 "
             key={index}
             variants={fadeInAnimationVariants}
             initial="initial"

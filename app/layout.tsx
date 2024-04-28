@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} h-[3000px] relative`}>
+      <body className={`${inter.className} h-[4500px] md:h-[2000px] relative`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

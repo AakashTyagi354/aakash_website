@@ -17,12 +17,12 @@ export default function Header() {
   return (
     <div className="h-[100px] w-full  fixed z-10 top-0 bg-[#FEFCFD]  ">
       <div className="w-[70%] h-full mx-auto border-b flex items-center">
-        <div className="w-[200px]">
+        <div className="w-[200px] hidden md:block">
           <a href="#home">
             <p className="text-3xl  text-gray-500">ADT</p>
           </a>
         </div>
-        <div className="flex gap-8 flex-grow  justify-end items-center ">
+        <div className="flex gap-8 flex-grow  md:justify-end items-center   ">
           <a href="#skills">
             <p className="text-gray-600 tracking-wide cursor-pointer text-sm">
               Skills

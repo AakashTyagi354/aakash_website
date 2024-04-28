@@ -2,16 +2,17 @@ import { FaGithub, FaLinkedinIn } from "react-icons/fa";
 
 import { FaCode } from "react-icons/fa";
 
+
 import { FaTwitter } from "react-icons/fa";
 export default function Info() {
   return (
     <div className="flex pt-[100px]  h-full w-[70%] mx-auto flex-col " >
       <div className="flex items-center w-full ">
-        <p className="text-4xl text-gray-600 tracking-widest font-mono">
+        <p className="text-2xl md:text-4xl text-gray-600 tracking-widest font-mono">
           I'M AAKASH TYAGI
         </p>
       </div>
-      <p className="mt-6 tracking-wide text-gray-500 ">
+      <p className=" mt-6 tracking-wide text-gray-500 ">
         As a 2024 graduate eager to kickstart my career, I bring hands-on
         experience in some of the latest technologies like the{" "}
         <span className="font-bold text-gray-900">MERN stack</span> , where I've
