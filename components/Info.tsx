@@ -9,13 +9,13 @@ export default function Info() {
     <div className="flex pt-[100px]  h-full w-[70%] mx-auto flex-col " >
       <div className="flex items-center w-full ">
         <p className="text-2xl md:text-4xl text-gray-600 tracking-widest font-mono">
-          I'M AAKASH TYAGI
+          I AM AAKASH TYAGI
         </p>
       </div>
       <p className=" mt-6 tracking-wide text-gray-500 ">
         As a 2024 graduate eager to kickstart my career, I bring hands-on
         experience in some of the latest technologies like the{" "}
-        <span className="font-bold text-gray-900">MERN stack</span> , where I've
+        <span className="font-bold text-gray-900">MERN stack</span> , where I have
         used
         <span className="font-bold text-gray-900"> TypeScript</span> and{" "}
         <span className="font-bold text-gray-900">Next.js 14 </span>
@@ -24,7 +24,7 @@ export default function Info() {
         complex problems efficiently.
       </p>
       <p className="mt-4 tracking-wide text-gray-500 ">
-        Additionally, I've actively participated in hackathons to apply my
+        Additionally, I have actively participated in hackathons to apply my
         skills in real-world scenarios. Notably, my team was a finalist in the
         <span className="font-bold text-gray-900"> Smart India Hackathon</span>,
         showcasing our ability to innovate and collaborate effectively under
@@ -37,7 +37,7 @@ export default function Info() {
         challenges through technology.
       </p>
       <p className="mt-4 tracking-wide text-gray-500 ">
-        I'm excited to leverage my skills and experiences to contribute
+        I am excited to leverage my skills and experiences to contribute
         positively to a dynamic team and make meaningful contributions to
         innovative projects.
       </p>
