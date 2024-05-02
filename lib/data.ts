@@ -2,7 +2,9 @@ import React from "react";
 import { CgWorkAlt } from "react-icons/cg";
 import { FaReact } from "react-icons/fa";
 import { LuGraduationCap } from "react-icons/lu";
-import corpcommentImg from "@/public/corpcomment.png";
+
+import project1 from "@/public/images/project1.png";
+import project2 from "@/public/images/project2.png";
 import rmtdevImg from "@/public/rmtdev.png";
 import wordanalyticsImg from "@/public/wordanalytics.png";
 
@@ -62,18 +64,22 @@ export const experiencesData = [
 
 export const projectsData = [
   {
-    title: "CorpComment",
+    title: "Delam",
     description:
-      "I worked as a full-stack developer on this startup project for 2 years. Users can give public feedback to companies.",
-    tags: ["React", "Next.js", "MongoDB", "Tailwind", "Prisma"],
-    imageUrl: corpcommentImg,
+      "Delma is your one-stop solution for online healthcare needs. From booking appointments with doctors to uploading lab test reports and purchasing medications.",
+    tags: ["MERN", "Next.js", "Typescript", "Tailwind", "Redis", "Redux"],
+    imageUrl: project1,
+    live: "https://client-plum-nine.vercel.app",
+    code: "https://github.com/AakashTyagi354/client",
   },
   {
-    title: "rmtDev",
+    title: "MindCraftAI",
     description:
-      "Job board for remote developer jobs. I was the front-end developer. It has features like filtering, sorting and pagination.",
-    tags: ["React", "TypeScript", "Next.js", "Tailwind", "Redux"],
-    imageUrl: rmtdevImg,
+      "Developed a platform integrating various AI tools, including an AI-Powered Code Generation Tool, an AI-Driven Video, and Music Generation",
+    tags: ["Nextjs", "TypeScript", "MySql", "Tailwind", "OpenAI"],
+    imageUrl: project2,
+    live: "https://mind-craft-f4u8lqqbo-aakashtyagi354.vercel.app/",
+    code: "https://github.com/AakashTyagi354/MindCraftAi",
   },
   {
     title: "Word Analytics",
@@ -81,8 +87,11 @@ export const projectsData = [
       "A public web app for quick analytics on text. It shows word count, character count and social media post limits.",
     tags: ["React", "Next.js", "SQL", "Tailwind", "Framer"],
     imageUrl: wordanalyticsImg,
+    live: "https://client-plum-nine.vercel.app",
+    code: "https://github.com/AakashTyagi354/client",
   },
 ] as const;
+
 import html from "../public/images/html.png";
 import js from "../public/images/js.png";
 import java from "../public/images/java.png";
@@ -186,4 +195,3 @@ export const skillsData = [
     img: motion,
   },
 ];
-

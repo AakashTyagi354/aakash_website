@@ -6,7 +6,7 @@ import SkillsTwo from "@/components/SkillsTwo";
 
 export default function Home() {
   return (
-    <main className="flex flex-col items-center px-4">
+    <main className="flex flex-col items-center ">
       <div className="w-full h-[1200] md:h-[700px] pt-[50px] md:pt-[150px]" id="home">
         <Info />
       </div>

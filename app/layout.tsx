@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import { ThemeProvider } from "@/components/theme-provider";
-
+import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -37,6 +37,7 @@ export default function RootLayout({
           <div className="relative z-10">
             <Header />
             <main>{children}</main>
+            <Toaster />
           </div>
         </ThemeProvider>
       </body>
