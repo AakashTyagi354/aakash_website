@@ -2,12 +2,14 @@
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { VscColorMode } from "react-icons/vsc";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { HiDownload } from "react-icons/hi";
 import { Button } from "./ui/button";
 import { Moon, Sun } from "lucide-react";
 export default function Header() {
@@ -17,9 +19,12 @@ export default function Header() {
   return (
     <div className="h-[100px] w-full  fixed z-10 top-0 bg-[#FEFCFD]  ">
       <div className="w-[70%] h-full mx-auto border-b flex items-center">
-        <div className="w-[200px] hidden md:block">
-          <a href="#home">
-            <p className="text-3xl  text-gray-500">ADT</p>
+        <div className="w-[200px] hidden  md:flex items-center">
+          <a href="/Aakash_Tyagi.pdf" download="Aakash_Tyagi.pdf">
+            <p className="  text-gray-500 flex items-center gap-1">
+              Download Resume
+              <HiDownload size={18} />
+            </p>
           </a>
         </div>
         <div className="flex gap-8 flex-grow  md:justify-end items-center   ">
