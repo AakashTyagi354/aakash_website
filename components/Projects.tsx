@@ -17,10 +17,10 @@ export default function Projects() {
   return (
     <section className="scroll-mt-28 mb-28 w-[75%] mx-auto mt-52">
   
-      <p className=" text-2xl md:text-4xl pl-[12px] text-gray-600 tracking-widest font-mono">
+      <p className=" text-2xl md:text-4xl pl-[12px] text-gray-600 tracking-widest font-mono dark:text-[#E1E1E1]">
         My Projects
       </p>
-      <div className="my-12 flex justify-end">
+      {/* <div className="my-12 flex justify-end">
         <div className="flex items-center gap-2 border h-10 w-[40%]">
           <BiSearch size={22} className="ml-2" />
           <input
@@ -31,8 +31,8 @@ export default function Projects() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-      </div>
-      <div className="flex flex-wrap gap-4   ">
+      </div> */}
+      <div className="flex flex-wrap gap-4 mt-28   ">
         {filteredProjects.map((project, index) => (
           <React.Fragment key={index}>
             <Project {...project} />

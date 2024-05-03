@@ -28,7 +28,7 @@ export default function SkillsTwo() {
       className=" w-[70%]  mx-auto  h-full flex flex-col items-center justify-center pt-[150px] md:pt-[100px]"
     >
       <div className="w-full">
-        <p className=" text-2xl md:text-4xl text-gray-600 tracking-widest font-mono">
+        <p className=" text-2xl md:text-4xl text-gray-600 tracking-widest font-mono dark:text-[#E1E1E1]">
           My Skills
         </p>
       </div>
@@ -53,7 +53,7 @@ export default function SkillsTwo() {
                 width={40}
                 className="ml-2"
               />
-              <p className="text-[14px] tracking-wider text-gray-500">
+              <p className="text-[14px] tracking-wider text-gray-500 dark:text-[#A2A6A8]">
                 {skill.title}
               </p>
             </div>

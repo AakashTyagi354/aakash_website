@@ -68,7 +68,7 @@ export default function Contact() {
   } else {
     return (
       <div className="w-[70%] mx-auto pt-[200px]">
-        <p className="text-2xl md:text-4xl text-gray-600 tracking-widest font-mono">
+        <p className="text-2xl md:text-4xl text-gray-600 tracking-widest font-mono dark:text-[#E1E1E1]">
           Conatct.
         </p>
         <p className="text-[10px] md:text-sm text-gray-500 tracking-wider my-6">
@@ -116,7 +116,7 @@ export default function Contact() {
                 {errors?.message?.message}
               </p>
             )}
-            <Button className="text-white bg-[#434445]" type="submit">
+            <Button className="text-white dark:bg-[#C6C6C6] dark:text-black bg-[#434445]" type="submit">
               Send
             </Button>
           </form>

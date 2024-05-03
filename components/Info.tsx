@@ -8,35 +8,35 @@ export default function Info() {
   return (
     <div className="flex pt-[100px]  h-full w-[70%] mx-auto flex-col " >
       <div className="flex items-center w-full ">
-        <p className="text-2xl md:text-4xl text-gray-600 tracking-widest font-mono">
+        <p className="text-2xl md:text-4xl text-gray-600 tracking-widest font-mono dark:text-[#E1E1E1]">
           I AM AAKASH TYAGI
         </p>
       </div>
-      <p className=" mt-6 tracking-wide text-gray-500 ">
+      <p className=" mt-6 tracking-wide text-gray-500 dark:text-[#A2A6A8] ">
         As a 2024 graduate eager to kickstart my career, I bring hands-on
         experience in some of the latest technologies like the{" "}
-        <span className="font-bold text-gray-900">MERN stack</span> , where I have
+        <span className="font-bold text-gray-900 dark:text-white">MERN stack</span> , where I have
         used
-        <span className="font-bold text-gray-900"> TypeScript</span> and{" "}
-        <span className="font-bold text-gray-900">Next.js 14 </span>
+        <span className="font-bold text-gray-900 dark:text-white"> TypeScript</span> and{" "}
+        <span className="font-bold text-gray-900 dark:text-white">Next.js 14 </span>
         to build modern web applications. My foundation in data structures and
         algorithms is strong, giving me a solid understanding of how to solve
         complex problems efficiently.
       </p>
-      <p className="mt-4 tracking-wide text-gray-500 ">
+      <p className="mt-4 tracking-wide text-gray-500 dark:text-[#A2A6A8]  ">
         Additionally, I have actively participated in hackathons to apply my
         skills in real-world scenarios. Notably, my team was a finalist in the
-        <span className="font-bold text-gray-900"> Smart India Hackathon</span>,
+        <span className="font-bold text-gray-900 dark:text-white"> Smart India Hackathon</span>,
         showcasing our ability to innovate and collaborate effectively under
         pressure. We also clinched victory in the
-        <span className="font-bold text-gray-900">
+        <span className="font-bold text-gray-900 dark:text-white">
           {" "}
           Maharashtra Innovation Challenge
         </span>{" "}
         at the district level, demonstrating our commitment to solving local
         challenges through technology.
       </p>
-      <p className="mt-4 tracking-wide text-gray-500 ">
+      <p className="mt-4 tracking-wide text-gray-500 dark:text-[#A2A6A8]  ">
         I am excited to leverage my skills and experiences to contribute
         positively to a dynamic team and make meaningful contributions to
         innovative projects.
@@ -46,19 +46,19 @@ export default function Info() {
           href="https://www.linkedin.com/in/aakash-tyagi-274228206/"
           target="_blank"
         >
-          <FaLinkedinIn size={25} className="cursor-pointer text-gray-600" />
+          <FaLinkedinIn size={25} className="cursor-pointer text-gray-600 dark:text-[#E1E1E1]" />
         </a>
         <a href="https://leetcode.com/Aakash_Tyagi" target="_blank">
-          <FaCode size={25} className="cursor-pointer text-gray-600" />
+          <FaCode size={25} className="cursor-pointer text-gray-600 dark:text-[#E1E1E1]" />
         </a>
         <a
           href="https://www.linkedin.com/in/aakash-tyagi-274228206/"
           target="_blank"
         >
-          <FaTwitter size={25} className="cursor-pointer text-gray-600" />
+          <FaTwitter size={25} className="cursor-pointer text-gray-600 dark:text-[#E1E1E1]" />
         </a>
         <a href="https://github.com/AakashTyagi354" target="_blank">
-          <FaGithub size={25} className="cursor-pointer text-gray-600" />
+          <FaGithub size={25} className="cursor-pointer text-gray-600 dark:text-[#E1E1E1]" />
         </a>
       </div>
     </div>
