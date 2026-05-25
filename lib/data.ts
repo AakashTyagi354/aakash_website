@@ -1,197 +1,128 @@
 import React from "react";
 import { CgWorkAlt } from "react-icons/cg";
-import { FaReact } from "react-icons/fa";
 import { LuGraduationCap } from "react-icons/lu";
+import { FaServer } from "react-icons/fa";
 
 import project1 from "@/public/images/project1.png";
 import project2 from "@/public/images/project2.png";
-import rmtdevImg from "@/public/rmtdev.png";
-import wordanalyticsImg from "@/public/wordanalytics.png";
 
+// ─────────────────────────────────────────────────────────────
+// NAV LINKS
+// ─────────────────────────────────────────────────────────────
 export const links = [
-  {
-    name: "Home",
-    hash: "#home",
-  },
-  {
-    name: "About",
-    hash: "#about",
-  },
-  {
-    name: "Projects",
-    hash: "#projects",
-  },
-  {
-    name: "Skills",
-    hash: "#skills",
-  },
-  {
-    name: "Experience",
-    hash: "#experience",
-  },
-  {
-    name: "Contact",
-    hash: "#contact",
-  },
+  { name: "Home",     hash: "#home"     },
+  { name: "Skills",   hash: "#skills"   },
+  { name: "Projects", hash: "#projects" },
+  { name: "Contact",  hash: "#contact"  },
 ] as const;
 
+// ─────────────────────────────────────────────────────────────
+// EXPERIENCE
+// ─────────────────────────────────────────────────────────────
 export const experiencesData = [
   {
-    title: "Graduated bootcamp",
-    location: "Miami, FL",
+    title: "B.Tech — Computer Science",
+    location: "India",
     description:
-      "I graduated after 6 months of studying. I immediately found a job as a front-end developer.",
+      "Graduated with a CS degree. Smart India Hackathon finalist. Maharashtra Innovation Challenge district winner.",
     icon: React.createElement(LuGraduationCap),
-    date: "2019",
+    date: "2024",
   },
   {
-    title: "Front-End Developer",
-    location: "Orlando, FL",
+    title: "Specialist Programmer",
+    location: "Infosys · Pune",
     description:
-      "I worked as a front-end developer for 2 years in 1 job and 1 year in another job. I also upskilled to the full stack.",
+      "Working as a Specialist Programmer. 1.5 years Spring Boot experience building backend systems.",
     icon: React.createElement(CgWorkAlt),
-    date: "2019 - 2021",
+    date: "2024 – present",
   },
   {
-    title: "Full-Stack Developer",
-    location: "Houston, TX",
+    title: "Building Delma",
+    location: "Side Project",
     description:
-      "I'm now a full-stack developer working as a freelancer. My stack includes React, Next.js, TypeScript, Tailwind, Prisma and MongoDB. I'm open to full-time opportunities.",
-    icon: React.createElement(FaReact),
-    date: "2021 - present",
+      "13 Spring Boot microservices, RAG pipeline (pgvector + Voyage AI), MCP booking agent (ReAct), post-consultation AI report generation via Groq.",
+    icon: React.createElement(FaServer),
+    date: "2024 – present",
   },
 ] as const;
 
+// ─────────────────────────────────────────────────────────────
+// PROJECTS
+// ─────────────────────────────────────────────────────────────
 export const projectsData = [
   {
-    title: "Delam",
+    title: "Delma",
     description:
-      "Delma is your one-stop solution for online healthcare needs. From booking appointments with doctors to uploading lab test reports and purchasing medications.",
-    tags: ["MERN", "Next.js", "Typescript", "Tailwind", "Redis", "Redux"],
+      "AI healthcare platform. 13 Spring Boot microservices — Spring Cloud Gateway, Eureka, Kafka, Redis, pgvector. RAG document summarization, MCP booking agent (ReAct), post-consultation AI report generation via Groq. CI/CD with GitHub Actions multi-arch Docker builds.",
+    tags: [
+      "Spring Boot",
+      "Kafka",
+      "Redis",
+      "pgvector",
+      "Groq",
+      "Next.js 14",
+      "TypeScript",
+      "Docker",
+    ],
     imageUrl: project1,
-    live: "https://client-plum-nine.vercel.app",
-    code: "https://github.com/AakashTyagi354/client",
+    live: "https://delma.aakashtyagi.in",
+    code: "https://github.com/AakashTyagi354/delma2.0_spring_microservice",
   },
   {
     title: "MindCraftAI",
     description:
-      "Developed a platform integrating various AI tools, including an AI-Powered Code Generation Tool, an AI-Driven Video, and Music Generation",
-    tags: ["Nextjs", "TypeScript", "MySql", "Tailwind", "OpenAI"],
+      "Platform integrating multiple AI tools — AI-powered code generation, video and music generation. Built with Next.js 14, TypeScript, and OpenAI APIs.",
+    tags: ["Next.js", "TypeScript", "OpenAI", "Tailwind", "MySQL"],
     imageUrl: project2,
     live: "https://mind-craft-f4u8lqqbo-aakashtyagi354.vercel.app/",
     code: "https://github.com/AakashTyagi354/MindCraftAi",
   },
-  {
-    title: "Word Analytics",
-    description:
-      "A public web app for quick analytics on text. It shows word count, character count and social media post limits.",
-    tags: ["React", "Next.js", "SQL", "Tailwind", "Framer"],
-    imageUrl: wordanalyticsImg,
-    live: "https://client-plum-nine.vercel.app",
-    code: "https://github.com/AakashTyagi354/client",
-  },
 ] as const;
 
-import html from "../public/images/html.png";
-import js from "../public/images/js.png";
-import java from "../public/images/java.png";
+// ─────────────────────────────────────────────────────────────
+// SKILLS
+// Grouped by domain — matches actual resume line
+// ─────────────────────────────────────────────────────────────
+import java    from "../public/images/java.png";
+import js      from "../public/images/js.png";
+import ts      from "../public/images/ts2.png";
+import react   from "../public/images/react.png";
+import nextjs  from "../public/images/nextjs2.svg";
+import redux   from "../public/images/redux.png";
 import tailwind from "../public/images/tailwind.png";
-import docker from "../public/images/docker.png";
-import ts from "../public/images/ts2.png";
-import express from "../public/images/express.png";
-import git from "../public/images/git.png";
-import graphQL from "../public/images/grahpql.png";
-import mongodb from "../public/images/mongodb.png";
-import nodejs from "../public/images/nodejs.png";
-import motion from "../public/images/motion.png";
+import docker  from "../public/images/docker.png";
+import git     from "../public/images/git.png";
 import postgres from "../public/images/postgres.png";
-import prisma from "../public/images/prisma3.svg";
-import redis from "../public/images/redis2.png";
-import redux from "../public/images/redux.png";
-import python from "../public/images/python.png";
-import nextjs from "../public/images/nextjs2.svg";
-import css from "../public/images/css.png";
-import react from "../public/images/react.png";
+import redis   from "../public/images/redis2.png";
+import nodejs  from "../public/images/nodejs.png";
+import html    from "../public/images/html.png";
+import css     from "../public/images/css.png";
 
 export const skillsData = [
-  {
-    title: "HTML",
-    img: html,
-  },
-  {
-    title: "CSS",
-    img: css,
-  },
-  {
-    title: "JavaScript",
-    img: js,
-  },
-  {
-    title: "TypeScript",
-    img: ts,
-  },
-  {
-    title: "Java",
-    img: java,
-  },
-  {
-    title: "React",
-    img: react,
-  },
-  {
-    title: "Next.js",
-    img: nextjs,
-  },
-  {
-    title: "Node.js",
-    img: nodejs,
-  },
-  {
-    title: "Git",
-    img: git,
-  },
-  {
-    title: "Tailwind",
-    img: tailwind,
-  },
-  {
-    title: "Prisma",
-    img: prisma,
-  },
-  {
-    title: "MongoDB",
-    img: mongodb,
-  },
-  {
-    title: "Redux",
-    img: redux,
-  },
-  {
-    title: "GraphQL",
-    img: graphQL,
-  },
-  {
-    title: "Express",
-    img: express,
-  },
-  {
-    title: "PostgreSQL",
-    img: postgres,
-  },
-  {
-    title: "Python",
-    img: python,
-  },
-  {
-    title: "Docker",
-    img: docker,
-  },
-  {
-    title: "Redis",
-    img: redis,
-  },
-  {
-    title: "Framer Motion",
-    img: motion,
-  },
+  // Languages
+  { title: "Java",        img: java,      category: "Backend"  },
+  { title: "TypeScript",  img: ts,        category: "Frontend" },
+  { title: "JavaScript",  img: js,        category: "Frontend" },
+
+  // Backend
+  { title: "Spring Boot", img: java,      category: "Backend"  },
+  { title: "Node.js",     img: nodejs,    category: "Backend"  },
+
+  // Frontend
+  { title: "Next.js 14",  img: nextjs,    category: "Frontend" },
+  { title: "React",       img: react,     category: "Frontend" },
+  { title: "Redux",       img: redux,     category: "Frontend" },
+  { title: "Tailwind",    img: tailwind,  category: "Frontend" },
+
+  // Database & Cache
+  { title: "PostgreSQL",  img: postgres,  category: "Database" },
+  { title: "Redis",       img: redis,     category: "Database" },
+
+  // DevOps
+  { title: "Docker",      img: docker,    category: "DevOps"   },
+  { title: "Git",         img: git,       category: "DevOps"   },
+
+  // Web basics
+  { title: "HTML",        img: html,      category: "Frontend" },
+  { title: "CSS",         img: css,       category: "Frontend" },
 ];

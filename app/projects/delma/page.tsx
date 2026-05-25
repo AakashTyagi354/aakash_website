@@ -20,7 +20,7 @@ const PROJECTS = [
     tags: ["Spring Boot","Spring Cloud","Kafka","Redis","pgvector","Groq","Voyage AI","Next.js 14","Docker"],
     live: "https://delma.aakashtyagi.in",
     code: "https://github.com/AakashTyagi354/delma2.0_spring_microservice",
-    caseStudy: "/projects/delma",
+    caseStudy: "/work",
     featured: true,
   },
   {
