@@ -28,7 +28,7 @@ const SERVICES = [
 const TAG_COLORS: Record<string, string> = {
   Infra: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
   Core:  "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-  AI:    "bg-[#78355b]/10 text-[#78355b] dark:text-[#c4869f] border-[#78355b]/20",
+  AI:    "bg-brand/10 text-brand dark:text-brand-mid border-brand/20",
   Async: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
   Store: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
   Lib:   "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20",
@@ -40,9 +40,9 @@ const AI_FEATURES = [
     title: "AI Symptom Checker",
     endpoint: "POST /api/v1/ai/symptom-check",
     model: "Groq llama-3.1-8b-instant",
-    color: "text-[#78355b]",
-    bg: "bg-[#78355b]/5",
-    border: "border-[#78355b]/20",
+    color: "text-brand",
+    bg: "bg-brand/5",
+    border: "border-brand/20",
     details: [
       "Patient types symptoms in plain English",
       "Prompt uses a fixed specialization list matching platform doctor categories",
@@ -190,7 +190,7 @@ export default function DelmaProjectPage() {
               }}
               className="inline-flex items-center gap-1.5 font-mono-custom text-xs
                          tracking-widest uppercase text-muted-foreground
-                         hover:text-[#78355b] transition-colors mb-8 group"
+                         hover:text-brand transition-colors mb-8 group"
             >
               <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
               Back
@@ -200,8 +200,8 @@ export default function DelmaProjectPage() {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.1 }}>
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#78355b] animate-pulse" />
-              <span className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b]">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+              <span className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand">
                 Full Case Study
               </span>
             </div>
@@ -235,8 +235,8 @@ export default function DelmaProjectPage() {
 
             <div className="flex flex-wrap gap-3">
               <a href="https://delma.aakashtyagi.in" target="_blank" rel="noopener noreferrer"
-                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#78355b]
-                            text-white text-sm font-medium hover:bg-[#5e2947] transition-colors">
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand
+                            text-white text-sm font-medium hover:bg-brand-dark transition-colors">
                 <ExternalLink size={14} />
                 Live Platform
               </a>
@@ -244,7 +244,7 @@ export default function DelmaProjectPage() {
                  target="_blank" rel="noopener noreferrer"
                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
                             border-border/80 text-sm text-muted-foreground
-                            hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+                            hover:border-brand/40 hover:text-brand transition-colors">
                 <Github size={14} />
                 Backend Repo
               </a>
@@ -259,7 +259,7 @@ export default function DelmaProjectPage() {
         <motion.section variants={stagger} initial="hidden"
                         whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand mb-3">
               01 — Architecture
             </p>
             <h2 className="font-display text-4xl text-foreground">13 Services</h2>
@@ -284,7 +284,7 @@ export default function DelmaProjectPage() {
                     {svc.tag}
                   </span>
                 </div>
-                <p className="font-mono-custom text-[10px] text-muted-foreground/50
+                <p className="font-mono-custom text-[10px] text-muted-foreground/70
                                tracking-wider mb-1.5">
                   :{svc.port}
                 </p>
@@ -322,7 +322,7 @@ export default function DelmaProjectPage() {
         <motion.section variants={stagger} initial="hidden"
                         whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand mb-3">
               02 — AI Features
             </p>
             <h2 className="font-display text-4xl text-foreground">4 LLM-Powered Features</h2>
@@ -397,7 +397,7 @@ export default function DelmaProjectPage() {
         <motion.section variants={stagger} initial="hidden"
                         whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand mb-3">
               03 — Platform Features
             </p>
             <h2 className="font-display text-4xl text-foreground">Core Platform</h2>
@@ -499,7 +499,7 @@ export default function DelmaProjectPage() {
         <motion.section variants={stagger} initial="hidden"
                         whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand mb-3">
               04 — Engineering Decisions
             </p>
             <h2 className="font-display text-4xl text-foreground">Why I built it this way</h2>
@@ -518,7 +518,7 @@ export default function DelmaProjectPage() {
                                        bg-card/50 backdrop-blur-sm card-hover">
                   <div className="p-5 md:p-6">
                     <div className="flex items-center gap-2.5 mb-4">
-                      <Icon size={16} className="text-[#78355b]" />
+                      <Icon size={16} className="text-brand" />
                       <h3 className="font-display text-xl text-foreground">{dec.title}</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -536,9 +536,9 @@ export default function DelmaProjectPage() {
                         </p>
                         <p className="text-sm text-muted-foreground leading-relaxed">{dec.solution}</p>
                       </div>
-                      <div className="border border-[#78355b]/15 rounded-xl p-4 bg-[#78355b]/5">
+                      <div className="border border-brand/15 rounded-xl p-4 bg-brand/5">
                         <p className="font-mono-custom text-[10px] tracking-widest uppercase
-                                       text-[#78355b] mb-2">
+                                       text-brand mb-2">
                           Why this approach
                         </p>
                         <p className="text-sm text-muted-foreground leading-relaxed">{dec.why}</p>
@@ -555,7 +555,7 @@ export default function DelmaProjectPage() {
         <motion.section variants={stagger} initial="hidden"
                         whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand mb-3">
               05 — Stack
             </p>
             <h2 className="font-display text-4xl text-foreground">Full Tech Stack</h2>
@@ -594,7 +594,7 @@ export default function DelmaProjectPage() {
           className="border border-border/60 rounded-2xl p-6 md:p-8 bg-card/30 backdrop-blur-sm"
         >
           <div className="flex items-center gap-2.5 mb-6">
-            <GitBranch size={16} className="text-[#78355b]" />
+            <GitBranch size={16} className="text-brand" />
             <h3 className="font-display text-2xl text-foreground">CI/CD Pipeline</h3>
           </div>
           <div className="flex flex-wrap items-center gap-3 font-mono-custom text-xs text-muted-foreground">
@@ -609,7 +609,7 @@ export default function DelmaProjectPage() {
               <span key={i}
                     className={`px-3 py-1.5 rounded-lg border ${
                       i === 0
-                        ? "border-[#78355b]/30 bg-[#78355b]/5 text-[#78355b]"
+                        ? "border-brand/30 bg-brand/5 text-brand"
                         : "border-border/60 bg-background/60"
                     }`}>
                 {step}
@@ -640,8 +640,8 @@ export default function DelmaProjectPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <a href="https://delma.aakashtyagi.in" target="_blank" rel="noopener noreferrer"
-               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#78355b]
-                          text-white text-sm font-medium hover:bg-[#5e2947] transition-colors">
+               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand
+                          text-white text-sm font-medium hover:bg-brand-dark transition-colors">
               <ExternalLink size={14} />
               Live Platform
             </a>
@@ -649,14 +649,14 @@ export default function DelmaProjectPage() {
                target="_blank" rel="noopener noreferrer"
                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
                           border-border/80 text-sm text-muted-foreground
-                          hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+                          hover:border-brand/40 hover:text-brand transition-colors">
               <Github size={14} />
               GitHub
             </a>
             <Link href="/#contact"
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
                              border-border/80 text-sm text-muted-foreground
-                             hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+                             hover:border-brand/40 hover:text-brand transition-colors">
               Get in touch
             </Link>
           </div>

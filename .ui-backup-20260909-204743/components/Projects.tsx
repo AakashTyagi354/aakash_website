@@ -47,7 +47,7 @@ export default function Projects() {
     <section id="projects" className="max-w-[1100px] mx-auto px-6 py-24">
       <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }}
                   viewport={{ once:true }} transition={{ duration:0.5 }} className="mb-14">
-        <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-brand mb-3">
+        <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
           01 — Work
         </p>
         <h2 className="font-display text-4xl md:text-5xl text-foreground">Projects</h2>
@@ -62,12 +62,12 @@ export default function Projects() {
             initial={{ opacity:0, y:30 }} whileInView={{ opacity:1, y:0 }}
             viewport={{ once:true }} transition={{ duration:0.5, delay:i*0.12 }}
             className={`border rounded-2xl overflow-hidden bg-card/50 backdrop-blur-sm card-hover
-                        ${project.featured ? "border-brand/25" : "border-border/80"}`}
+                        ${project.featured ? "border-[#78355b]/25" : "border-border/80"}`}
           >
             {project.featured && (
-              <div className="bg-brand/[0.08] border-b border-brand/15 px-6 py-2 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand" />
-                <span className="font-mono-custom text-[10px] tracking-widest uppercase text-brand">
+              <div className="bg-[#78355b]/08 border-b border-[#78355b]/15 px-6 py-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#78355b]" />
+                <span className="font-mono-custom text-[10px] tracking-widest uppercase text-[#78355b]">
                   Featured
                 </span>
               </div>
@@ -76,7 +76,7 @@ export default function Projects() {
               <div className="flex items-start justify-between gap-6 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="font-mono-custom text-xs text-muted-foreground/70 tracking-widest">
+                    <span className="font-mono-custom text-xs text-muted-foreground/50 tracking-widest">
                       {project.index}
                     </span>
                     <span className="font-mono-custom text-xs tracking-widest uppercase text-muted-foreground">
@@ -88,7 +88,7 @@ export default function Projects() {
                   <ul className="space-y-2 mb-6">
                     {project.highlights.map((h, hi) => (
                       <li key={hi} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span className="text-brand mt-1 flex-shrink-0">→</span>
+                        <span className="text-[#78355b] mt-1 flex-shrink-0">→</span>
                         <span>{h}</span>
                       </li>
                     ))}
@@ -104,20 +104,20 @@ export default function Projects() {
                 </div>
                 <div className="flex flex-col gap-2 flex-shrink-0">
                   <a href={project.live} target="_blank" rel="noopener noreferrer"
-                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand text-white
-                                text-sm font-medium hover:bg-brand-dark transition-colors whitespace-nowrap">
+                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#78355b] text-white
+                                text-sm font-medium hover:bg-[#5e2947] transition-colors whitespace-nowrap">
                     <ExternalLink size={13} /> Live
                   </a>
                   <a href={project.code} target="_blank" rel="noopener noreferrer"
                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border/80
-                                text-sm text-muted-foreground hover:border-brand/40
-                                hover:text-brand transition-colors whitespace-nowrap">
+                                text-sm text-muted-foreground hover:border-[#78355b]/40
+                                hover:text-[#78355b] transition-colors whitespace-nowrap">
                     <Github size={13} /> Code
                   </a>
                   {project.caseStudy && (
                     <Link href={project.caseStudy}
                           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border
-                                     border-brand/30 text-sm text-brand hover:bg-brand/[0.08]
+                                     border-[#78355b]/30 text-sm text-[#78355b] hover:bg-[#78355b]/08
                                      transition-colors whitespace-nowrap font-medium">
                       <BookOpen size={13} /> Full Details
                     </Link>
@@ -134,7 +134,7 @@ export default function Projects() {
                   className="mt-8 flex justify-center">
         <a href="https://github.com/AakashTyagi354" target="_blank" rel="noopener noreferrer"
            className="flex items-center gap-2 font-mono-custom text-xs tracking-widest uppercase
-                      text-muted-foreground hover:text-brand transition-colors">
+                      text-muted-foreground hover:text-[#78355b] transition-colors">
           More on GitHub <ArrowUpRight size={13} />
         </a>
       </motion.div>

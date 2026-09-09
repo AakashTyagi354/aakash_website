@@ -1,0 +1,3949 @@
+
+
+===== ./app/projects/delma/page.tsx =====
+"use client";
+import { motion } from "framer-motion";
+import {
+  ExternalLink, Github, ChevronRight,
+  Shield, Zap, Brain, MessageSquare, FileText,
+  Video, ShoppingBag, Bell, Server, GitBranch,
+  Lock, RefreshCw, Layers, ArrowLeft, Database
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+const SERVICES = [
+  { name: "discovery-server",   port: "8761", desc: "Eureka service registry",                          tag: "Infra" },
+  { name: "gateway",            port: "8089", desc: "Spring Cloud Gateway · JWT auth · WebFlux",        tag: "Infra" },
+  { name: "userservice",        port: "8111", desc: "Auth · OTP · JWT · refresh tokens",                tag: "Core"  },
+  { name: "doctorservice",      port: "8010", desc: "Profiles · Redis cache · approval workflow",       tag: "Core"  },
+  { name: "appointmentservice", port: "8012", desc: "Slots · booking · ZEGOCLOUD video tokens",         tag: "Core"  },
+  { name: "paymentservice",     port: "8083", desc: "Razorpay integration · HMAC-SHA256 verify",        tag: "Core"  },
+  { name: "documentservice",    port: "8091", desc: "AWS S3 · presigned URLs · Kafka events",           tag: "Core"  },
+  { name: "aiservice",          port: "8095", desc: "All AI features · Groq · Voyage AI · pgvector",    tag: "AI"    },
+  { name: "notificationservice",port: "8017", desc: "Kafka consumer · Gmail SMTP",                      tag: "Async" },
+  { name: "productservice",     port: "8016", desc: "E-store product catalog",                          tag: "Store" },
+  { name: "categoryservice",    port: "8015", desc: "Category + slug management",                       tag: "Store" },
+  { name: "orderservice",       port: "8013", desc: "Cart · orders · checkout",                         tag: "Store" },
+  { name: "common-lib",         port: "—",    desc: "Shared ApiResponse · exceptions · DTOs",           tag: "Lib"   },
+];
+
+const TAG_COLORS: Record<string, string> = {
+  Infra: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  Core:  "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  AI:    "bg-[#78355b]/10 text-[#78355b] dark:text-[#c4869f] border-[#78355b]/20",
+  Async: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+  Store: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
+  Lib:   "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20",
+};
+
+const AI_FEATURES = [
+  {
+    icon: Brain,
+    title: "AI Symptom Checker",
+    endpoint: "POST /api/v1/ai/symptom-check",
+    model: "Groq llama-3.1-8b-instant",
+    color: "text-[#78355b]",
+    bg: "bg-[#78355b]/5",
+    border: "border-[#78355b]/20",
+    details: [
+      "Patient types symptoms in plain English",
+      "Prompt uses a fixed specialization list matching platform doctor categories",
+      "JSON response parsed → fallback to General Medicine on parse failure (never returns 500)",
+      "Frontend auto-filters doctor listing based on returned specialization",
+    ],
+    decision: "Fixed specialization list prevents the LLM from inventing specialties that don't exist on the platform. Fallback to General Medicine ensures the endpoint is always usable even if Groq is degraded.",
+  },
+  {
+    icon: FileText,
+    title: "RAG Document Summarizer",
+    endpoint: "GET /api/v1/ai/summarize/{userId}",
+    model: "Voyage AI voyage-3-lite · pgvector · Groq LLaMA 3.1",
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-500/5",
+    border: "border-blue-500/20",
+    details: [
+      "Patient uploads PDF → documentservice saves to S3 → publishes Kafka event",
+      "aiservice consumes event: downloads PDF → Apache PDFBox text extraction",
+      "Fixed-size chunking: 500 chars, 100 char overlap",
+      "Voyage AI voyage-3-lite embeds each chunk (512-dim), stored in pgvector via JdbcTemplate + ::vector cast",
+      "21s Thread.sleep between chunks (Voyage free tier: 3 RPM)",
+      "On doctor query: embed query → cosine similarity search → top-K chunks → Groq generates 3-point clinical summary",
+    ],
+    decision: "Fixed-size chunking chosen over semantic/agentic — medical documents are 1-5 pages, agentic chunking would have tripled API calls against the 3 RPM limit for zero measurable quality gain. JdbcTemplate used instead of Hibernate to bypass custom column type limitations with pgvector.",
+  },
+  {
+    icon: MessageSquare,
+    title: "MCP Booking Agent (ReAct)",
+    endpoint: "POST /api/v1/ai/agent/chat",
+    model: "Groq qwen3-32b",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-500/5",
+    border: "border-emerald-500/20",
+    details: [
+      "5 tools: search_doctors · get_available_slots · book_appointment · get_my_appointments · create_payment_order",
+      "ReAct loop: reason → call tool → observe result → reason again (max 10 iterations)",
+      "Redis slot session injection: real doctorId + slotIds stored in Redis per userId, injected as SYSTEM message at position 1 before every LLM call",
+      "400 correction loop: if LLM passes string slotId instead of integer, error injected back → forces re-fetch",
+      "Floating chat widget in frontend (patients only)",
+    ],
+    decision: "LLM hallucination problem — qwen3-32b would invent slotId=123 in later turns because conversation history only carries text, not structured tool results. Redis injection gives the LLM ground truth IDs on every call, eliminating hallucinations. This was the hardest engineering problem in the project.",
+  },
+  {
+    icon: Zap,
+    title: "Post-Consultation AI Notes",
+    endpoint: "Kafka: consultation-notes-ready",
+    model: "Groq llama-3.1-8b-instant · temperature=0.3",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-500/5",
+    border: "border-amber-500/20",
+    details: [
+      "Doctor types notes during video call (ConsultationNotesPanel — auto-saves every 30s to DRAFT status)",
+      "Doctor clicks 'End Call & Save' → appointmentservice saves notes → publishes to consultation-notes-ready Kafka topic",
+      "aiservice consumer picks up event: formats medications as numbered list (Drug | Dose | Freq | Route)",
+      "buildPrompt() creates a 7-section contract: Consultation Summary · Diagnosis · Medications · Tests · Recovery · Follow-up · Disclaimer",
+      "temperature=0.3: consistency over creativity — medical docs must be literal",
+      "AI report saved back via Feign → AppointmentClient.updateAiReport()",
+      "Patient sees report in MyConsultationReports between Upcoming/History sections",
+    ],
+    decision: "Kafka used (not Feign) because report generation takes 5-10 seconds. Direct call would freeze the doctor's End Call button for 10 seconds — unacceptable UX. Exceptions swallowed in consumer (not rethrown): notes are already saved in DB, AI report is enhancement not blocker. Rethrowing would freeze the partition and block every other patient's report.",
+  },
+];
+
+const ENGINEERING_DECISIONS = [
+  {
+    icon: Lock,
+    title: "Double-Booking Race Condition",
+    problem: "Two patients could book the same slot simultaneously — both pass the AVAILABLE check before either writes BOOKED.",
+    solution: "@Version on DoctorSlot entity. Hibernate generates: UPDATE doctor_slot SET status='BOOKED', version=2 WHERE id=5 AND version=1. Only one thread succeeds. The other gets ObjectOptimisticLockingFailureException → HTTP 409.",
+    why: "Optimistic over pessimistic because true slot contention is rare. Pessimistic (SELECT FOR UPDATE) would queue all booking requests under load.",
+  },
+  {
+    icon: RefreshCw,
+    title: "JWT + Refresh Token Rotation",
+    problem: "Access tokens that never expire are a security liability. But requiring re-login every 15 minutes breaks UX.",
+    solution: "Access token (15 min) in Authorization header. Refresh token (7 days) in HttpOnly cookie stored in DB. On refresh: old token deleted, new token issued. Stolen refresh tokens become invalid after first legitimate use.",
+    why: "HttpOnly cookie prevents XSS token theft. DB storage enables explicit revocation on logout. Rotation means a compromised token has a very limited attack window.",
+  },
+  {
+    icon: Database,
+    title: "Redis Cache-Aside + TTL (Defense in Depth)",
+    problem: "Doctor listings hit the DB on every request. A single cache eviction failure would serve stale data indefinitely.",
+    solution: "@Cacheable on GET /api/v1/doctor/all (doctors::all key) + @CacheEvict on any approval/rejection + 10-minute TTL as safety net.",
+    why: "@CacheEvict alone: if Redis has a brief outage during approval, eviction fails silently → stale data forever. TTL alone: stale for up to 10 minutes after every state change. Together: immediate freshness + bounded staleness window.",
+  },
+  {
+    icon: Zap,
+    title: "Kafka for Async Notification Decoupling",
+    problem: "If appointmentservice called notificationservice via Feign and the notification service was down, the booking would fail — two completely unrelated concerns sharing a failure surface.",
+    solution: "appointmentservice publishes NotificationEvent to Kafka and returns immediately. notificationservice consumes when available. Kafka retains events during downtime.",
+    why: "Temporal decoupling. Booking is a synchronous, critical path. Notification delivery is best-effort. They should have independent failure surfaces.",
+  },
+  {
+    icon: Shield,
+    title: "OTP via Redis (not PostgreSQL)",
+    problem: "Email OTPs are ephemeral — they expire in 10 minutes, are one-time use, and need fast lookup.",
+    solution: "Redis key: otp:{email} with 10-minute EXPIRE. On successful verification: key deleted immediately (one-time use). SecureRandom for generation (not java.util.Random).",
+    why: "Redis native TTL eliminates the need for a cron cleanup job. Sub-millisecond reads. Zero schema overhead. PostgreSQL would be the wrong tool for ephemeral data.",
+  },
+  {
+    icon: Server,
+    title: "Spring Cloud Gateway (WebFlux, not MVC)",
+    problem: "A gateway that blocks one thread per request would become a bottleneck under load — it's the single entry point for all 13 services.",
+    solution: "Spring Cloud Gateway 5.0 built on Project Reactor (Netty). Non-blocking, event-loop-based. JwtAuthGatewayFilter validates JWT, injects X-User-Id and X-Roles headers. Downstream services read headers — they do NOT re-validate JWT.",
+    why: "The gateway does almost nothing except validate and forward. Non-blocking I/O handles thousands of concurrent connections with a small thread pool. JWT validation at gateway = single point of trust, not repeated in every service.",
+  },
+];
+
+const TECH_STACK = [
+  { category: "Backend",           items: ["Java 21", "Spring Boot 4", "Spring Cloud Gateway 5.0", "Eureka", "OpenFeign", "Resilience4j", "Hibernate 7", "JPA", "Maven"] },
+  { category: "AI & LLM",          items: ["Groq llama-3.1-8b-instant", "Groq qwen3-32b", "Voyage AI voyage-3-lite", "pgvector", "Spring AI", "Apache PDFBox"] },
+  { category: "Messaging & Cache", items: ["Apache Kafka 3.x", "Redis 7.x", "Spring Kafka"] },
+  { category: "Frontend",          items: ["Next.js 14 (App Router)", "TypeScript", "Redux Toolkit", "Tailwind CSS", "shadcn/ui", "Framer Motion"] },
+  { category: "Infrastructure",    items: ["Docker", "Docker Compose", "GitHub Actions CI/CD", "Multi-arch builds (amd64 + arm64)", "AWS S3", "ZEGOCLOUD", "Razorpay"] },
+  { category: "Database",          items: ["PostgreSQL (x9 separate DBs)", "pgvector extension", "Redis"] },
+];
+
+const fadeUp = {
+  hidden:  { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+const stagger = { visible: { transition: { staggerChildren: 0.07 } } };
+
+export default function DelmaProjectPage() {
+  const router = useRouter();
+
+  return (
+    <main className="min-h-screen bg-background">
+
+      {/* ── HERO ── */}
+      <section className="relative overflow-hidden border-b border-border/40">
+        <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" />
+        <div className="max-w-[1100px] mx-auto px-6 pt-28 pb-16 relative z-10">
+
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4 }}>
+            <button
+              onClick={() => {
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="inline-flex items-center gap-1.5 font-mono-custom text-xs
+                         tracking-widest uppercase text-muted-foreground
+                         hover:text-[#78355b] transition-colors mb-8 group"
+            >
+              <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+              Back
+            </button>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.1 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#78355b] animate-pulse" />
+              <span className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b]">
+                Full Case Study
+              </span>
+            </div>
+
+            <h1 className="font-display text-5xl md:text-7xl text-foreground mb-4">
+              Delma
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground font-light
+                          max-w-[640px] leading-relaxed mb-8">
+              AI-powered healthcare platform. 13 Spring Boot microservices.
+              4 LLM features. Built from scratch.
+            </p>
+
+            <div className="flex flex-wrap gap-3 mb-8">
+              {[
+                ["13", "Microservices"],
+                ["4",  "AI Features"],
+                ["3",  "Kafka Topics"],
+                ["9",  "Databases"],
+                ["2",  "Arch Targets"],
+              ].map(([val, lbl]) => (
+                <div key={lbl}
+                     className="border border-border/80 rounded-xl px-4 py-3
+                                bg-card/50 backdrop-blur-sm text-center">
+                  <p className="font-display text-2xl text-foreground leading-none mb-0.5">{val}</p>
+                  <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                text-muted-foreground">{lbl}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a href="https://delma.aakashtyagi.in" target="_blank" rel="noopener noreferrer"
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#78355b]
+                            text-white text-sm font-medium hover:bg-[#5e2947] transition-colors">
+                <ExternalLink size={14} />
+                Live Platform
+              </a>
+              <a href="https://github.com/AakashTyagi354/delma2.0_spring_microservice"
+                 target="_blank" rel="noopener noreferrer"
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
+                            border-border/80 text-sm text-muted-foreground
+                            hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+                <Github size={14} />
+                Backend Repo
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="max-w-[1100px] mx-auto px-6 py-16 space-y-24">
+
+        {/* ── SERVICES MAP ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              01 — Architecture
+            </p>
+            <h2 className="font-display text-4xl text-foreground">13 Services</h2>
+            <p className="mt-2 text-muted-foreground max-w-[480px] leading-relaxed">
+              Each service owns its data, scales independently, and fails without taking
+              down the rest of the platform.
+            </p>
+          </motion.div>
+
+          <motion.div variants={stagger}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {SERVICES.map((svc) => (
+              <motion.div key={svc.name} variants={fadeUp}
+                          className="border border-border/80 rounded-xl p-4
+                                     bg-card/50 backdrop-blur-sm card-hover">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="font-mono-custom text-sm font-medium text-foreground">
+                    {svc.name}
+                  </span>
+                  <span className={`font-mono-custom text-[10px] px-2 py-0.5 rounded-full
+                                    border ${TAG_COLORS[svc.tag]}`}>
+                    {svc.tag}
+                  </span>
+                </div>
+                <p className="font-mono-custom text-[10px] text-muted-foreground/50
+                               tracking-wider mb-1.5">
+                  :{svc.port}
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{svc.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp}
+                      className="mt-6 border border-border/60 rounded-2xl p-5 bg-card/30">
+            <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                           text-amber-600 dark:text-amber-400 mb-3">
+              Kafka Topics
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { topic: "notification-topic",       desc: "Appointment confirmations, doctor approvals" },
+                { topic: "document-uploaded",        desc: "Triggers RAG indexing in aiservice" },
+                { topic: "consultation-notes-ready", desc: "Triggers AI report generation" },
+              ].map((t) => (
+                <div key={t.topic}
+                     className="border border-amber-500/20 rounded-xl px-4 py-3 bg-amber-500/5">
+                  <p className="font-mono-custom text-xs text-amber-700 dark:text-amber-400
+                                 font-medium mb-0.5">
+                    {t.topic}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t.desc}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.section>
+
+        {/* ── AI FEATURES ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              02 — AI Features
+            </p>
+            <h2 className="font-display text-4xl text-foreground">4 LLM-Powered Features</h2>
+            <p className="mt-2 text-muted-foreground max-w-[480px] leading-relaxed">
+              Each feature solves a real clinical problem.
+              Each has specific engineering decisions worth explaining.
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col gap-6">
+            {AI_FEATURES.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div key={feature.title} variants={fadeUp}
+                            className={`border rounded-2xl overflow-hidden bg-card/50 backdrop-blur-sm ${feature.border}`}>
+                  {/* Header */}
+                  <div className={`${feature.bg} border-b ${feature.border} px-6 py-4
+                                   flex items-start justify-between gap-4 flex-wrap`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl border ${feature.border}
+                                       flex items-center justify-center`}>
+                        <Icon size={16} className={feature.color} />
+                      </div>
+                      <div>
+                        <h3 className="font-display text-xl text-foreground">{feature.title}</h3>
+                        <p className="font-mono-custom text-[10px] tracking-wider
+                                       text-muted-foreground/70 mt-0.5">
+                          {feature.endpoint}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-mono-custom text-[10px] px-3 py-1.5 rounded-full
+                                      border ${feature.border} ${feature.color} bg-background/60`}>
+                      {feature.model}
+                    </span>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6">
+                    <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                   text-muted-foreground/60 mb-3">
+                      How it works
+                    </p>
+                    <ul className="space-y-2 mb-6">
+                      {feature.details.map((d, di) => (
+                        <li key={di} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                          <span className={`${feature.color} mt-0.5 flex-shrink-0 font-mono-custom text-xs`}>
+                            {String(di + 1).padStart(2, "0")}
+                          </span>
+                          <span>{d}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* FIX: was mixed quotes — now proper template literal */}
+                    <div className={`border ${feature.border} rounded-xl p-4 ${feature.bg}`}>
+                      <p className={`font-mono-custom text-[10px] tracking-widest uppercase mb-2 ${feature.color}`}>
+                        Engineering decision
+                      </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {feature.decision}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        {/* ── PLATFORM FEATURES ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              03 — Platform Features
+            </p>
+            <h2 className="font-display text-4xl text-foreground">Core Platform</h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                icon: Video,
+                title: "Video Consultations",
+                color: "text-blue-500",
+                points: [
+                  "ZEGOCLOUD SDK with AES-256 per-session encryption",
+                  "Appointment-scoped video tokens generated server-side",
+                  "ConsultationNotesPanel for doctors (auto-saves every 30s)",
+                  "Authorization check: only participants can get video token",
+                ],
+              },
+              {
+                icon: Shield,
+                title: "Auth & Security",
+                color: "text-emerald-500",
+                points: [
+                  "Email OTP verification — 6-digit, Redis TTL 10min, one-time use",
+                  "JWT access (15min) + refresh rotation (7 days, HttpOnly cookie)",
+                  "Refresh tokens stored in DB — explicit revocation on logout",
+                  "Gateway-level JWT validation — X-User-Id/X-Roles header injection",
+                ],
+              },
+              {
+                icon: FileText,
+                title: "Medical Documents",
+                color: "text-amber-500",
+                points: [
+                  "Upload to AWS S3 — presigned URLs with 10-minute TTL",
+                  "Access control: only the uploading patient + their assigned doctor",
+                  "Kafka event on upload triggers RAG indexing in aiservice",
+                  "Metadata stored in PostgreSQL, files in S3 (separation of concerns)",
+                ],
+              },
+              {
+                icon: ShoppingBag,
+                title: "Medical E-Store",
+                color: "text-purple-500",
+                points: [
+                  "Product catalog via productservice + categoryservice",
+                  "Cart management and order lifecycle in orderservice",
+                  "Razorpay payment with HMAC-SHA256 signature verification",
+                  "Order confirmation via Kafka → notificationservice → email",
+                ],
+              },
+              {
+                icon: Bell,
+                title: "Real-time Notifications",
+                color: "text-red-500",
+                points: [
+                  "Kafka consumer in notificationservice (notification-topic)",
+                  "Triggers on: booking confirmation, doctor approval, order updates",
+                  "Gmail SMTP delivery + in-app notification persistence",
+                  "Frontend: 5-minute module-level TTL cache (not useState — survives remounts)",
+                ],
+              },
+              {
+                icon: Layers,
+                title: "Doctor Workflow",
+                color: "text-teal-500",
+                points: [
+                  "Apply → pending review → admin approves via Feign chain (user→doctor→user)",
+                  "Redis cache-aside on listings (@Cacheable + @CacheEvict + TTL)",
+                  "Slot management: doctor creates availability windows",
+                  "Doctor profile search by name or specialization",
+                ],
+              },
+            ].map((feat) => {
+              const Icon = feat.icon;
+              return (
+                <motion.div key={feat.title} variants={fadeUp}
+                            className="border border-border/80 rounded-2xl p-5
+                                       bg-card/50 backdrop-blur-sm card-hover">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <Icon size={16} className={feat.color} />
+                    <h3 className="font-display text-lg text-foreground">{feat.title}</h3>
+                  </div>
+                  <ul className="space-y-2">
+                    {feat.points.map((p, pi) => (
+                      <li key={pi} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <ChevronRight size={12} className={`${feat.color} mt-0.5 flex-shrink-0`} />
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        {/* ── ENGINEERING DECISIONS ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              04 — Engineering Decisions
+            </p>
+            <h2 className="font-display text-4xl text-foreground">Why I built it this way</h2>
+            <p className="mt-2 text-muted-foreground max-w-[480px] leading-relaxed">
+              Every non-obvious decision has a reason. These are the ones
+              worth explaining to a senior engineer.
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col gap-4">
+            {ENGINEERING_DECISIONS.map((dec) => {
+              const Icon = dec.icon;
+              return (
+                <motion.div key={dec.title} variants={fadeUp}
+                            className="border border-border/80 rounded-2xl overflow-hidden
+                                       bg-card/50 backdrop-blur-sm card-hover">
+                  <div className="p-5 md:p-6">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <Icon size={16} className="text-[#78355b]" />
+                      <h3 className="font-display text-xl text-foreground">{dec.title}</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border border-red-500/15 rounded-xl p-4 bg-red-500/5">
+                        <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                       text-red-500 mb-2">
+                          Problem
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{dec.problem}</p>
+                      </div>
+                      <div className="border border-emerald-500/15 rounded-xl p-4 bg-emerald-500/5">
+                        <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                       text-emerald-600 dark:text-emerald-400 mb-2">
+                          Solution
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{dec.solution}</p>
+                      </div>
+                      <div className="border border-[#78355b]/15 rounded-xl p-4 bg-[#78355b]/5">
+                        <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                       text-[#78355b] mb-2">
+                          Why this approach
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{dec.why}</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        {/* ── TECH STACK ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              05 — Stack
+            </p>
+            <h2 className="font-display text-4xl text-foreground">Full Tech Stack</h2>
+          </motion.div>
+
+          <motion.div variants={stagger}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TECH_STACK.map((group) => (
+              <motion.div key={group.category} variants={fadeUp}
+                          className="border border-border/80 rounded-2xl p-5 bg-card/50 backdrop-blur-sm">
+                <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                               text-muted-foreground/60 mb-3">
+                  {group.category}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.items.map((item) => (
+                    <span key={item}
+                          className="skill-pill font-mono-custom text-[11px] px-2.5 py-1
+                                     rounded-full border border-border/80 text-muted-foreground
+                                     bg-background/60">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.section>
+
+        {/* ── CI/CD ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="border border-border/60 rounded-2xl p-6 md:p-8 bg-card/30 backdrop-blur-sm"
+        >
+          <div className="flex items-center gap-2.5 mb-6">
+            <GitBranch size={16} className="text-[#78355b]" />
+            <h3 className="font-display text-2xl text-foreground">CI/CD Pipeline</h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 font-mono-custom text-xs text-muted-foreground">
+            {[
+              "Push to main",
+              "→ GitHub Actions",
+              "→ mvn clean install",
+              "→ Docker Buildx (amd64 + arm64)",
+              "→ Docker Hub (aakash354/delma-*)",
+              "→ Hetzner CX31 (8GB RAM)",
+            ].map((step, i) => (
+              <span key={i}
+                    className={`px-3 py-1.5 rounded-lg border ${
+                      i === 0
+                        ? "border-[#78355b]/30 bg-[#78355b]/5 text-[#78355b]"
+                        : "border-border/60 bg-background/60"
+                    }`}>
+                {step}
+              </span>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Multi-arch builds mean the same image runs on both the Hetzner production
+            server (amd64) and Apple Silicon development machines (arm64)
+            without architecture-specific Dockerfiles.
+          </p>
+        </motion.section>
+
+        {/* ── FOOTER CTA ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col md:flex-row items-start md:items-center
+                     justify-between gap-6 pt-8 border-t border-border/40"
+        >
+          <div>
+            <p className="font-display text-2xl text-foreground mb-1">Want to dig deeper?</p>
+            <p className="text-muted-foreground text-sm">
+              Full source code on GitHub. README covers every service in detail.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <a href="https://delma.aakashtyagi.in" target="_blank" rel="noopener noreferrer"
+               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#78355b]
+                          text-white text-sm font-medium hover:bg-[#5e2947] transition-colors">
+              <ExternalLink size={14} />
+              Live Platform
+            </a>
+            <a href="https://github.com/AakashTyagi354/delma2.0_spring_microservice"
+               target="_blank" rel="noopener noreferrer"
+               className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
+                          border-border/80 text-sm text-muted-foreground
+                          hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+              <Github size={14} />
+              GitHub
+            </a>
+            <Link href="/#contact"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
+                             border-border/80 text-sm text-muted-foreground
+                             hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+              Get in touch
+            </Link>
+          </div>
+        </motion.div>
+
+      </div>
+    </main>
+  );
+}
+
+===== ./app/work/page.tsx =====
+"use client";
+import { motion } from "framer-motion";
+import {
+  ExternalLink, Github, ChevronRight,
+  Shield, Zap, Brain, MessageSquare, FileText,
+  Video, ShoppingBag, Bell, Server, GitBranch,
+  Lock, RefreshCw, Layers, ArrowLeft, Database
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+const SERVICES = [
+  { name: "discovery-server",   port: "8761", desc: "Eureka service registry",                          tag: "Infra" },
+  { name: "gateway",            port: "8089", desc: "Spring Cloud Gateway · JWT auth · WebFlux",        tag: "Infra" },
+  { name: "userservice",        port: "8111", desc: "Auth · OTP · JWT · refresh tokens",                tag: "Core"  },
+  { name: "doctorservice",      port: "8010", desc: "Profiles · Redis cache · approval workflow",       tag: "Core"  },
+  { name: "appointmentservice", port: "8012", desc: "Slots · booking · ZEGOCLOUD video tokens",         tag: "Core"  },
+  { name: "paymentservice",     port: "8083", desc: "Razorpay integration · HMAC-SHA256 verify",        tag: "Core"  },
+  { name: "documentservice",    port: "8091", desc: "AWS S3 · presigned URLs · Kafka events",           tag: "Core"  },
+  { name: "aiservice",          port: "8095", desc: "All AI features · Groq · Voyage AI · pgvector",    tag: "AI"    },
+  { name: "notificationservice",port: "8017", desc: "Kafka consumer · Gmail SMTP",                      tag: "Async" },
+  { name: "productservice",     port: "8016", desc: "E-store product catalog",                          tag: "Store" },
+  { name: "categoryservice",    port: "8015", desc: "Category + slug management",                       tag: "Store" },
+  { name: "orderservice",       port: "8013", desc: "Cart · orders · checkout",                         tag: "Store" },
+  { name: "common-lib",         port: "—",    desc: "Shared ApiResponse · exceptions · DTOs",           tag: "Lib"   },
+];
+
+const TAG_COLORS: Record<string, string> = {
+  Infra: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  Core:  "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  AI:    "bg-[#78355b]/10 text-[#78355b] dark:text-[#c4869f] border-[#78355b]/20",
+  Async: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+  Store: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
+  Lib:   "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20",
+};
+
+const AI_FEATURES = [
+  {
+    icon: Brain,
+    title: "AI Symptom Checker",
+    endpoint: "POST /api/v1/ai/symptom-check",
+    model: "Groq llama-3.1-8b-instant",
+    color: "text-[#78355b]",
+    bg: "bg-[#78355b]/5",
+    border: "border-[#78355b]/20",
+    details: [
+      "Patient types symptoms in plain English",
+      "Prompt uses a fixed specialization list matching platform doctor categories",
+      "JSON response parsed → fallback to General Medicine on parse failure (never returns 500)",
+      "Frontend auto-filters doctor listing based on returned specialization",
+    ],
+    decision: "Fixed specialization list prevents the LLM from inventing specialties that don't exist on the platform. Fallback to General Medicine ensures the endpoint is always usable even if Groq is degraded.",
+  },
+  {
+    icon: FileText,
+    title: "RAG Document Summarizer",
+    endpoint: "GET /api/v1/ai/summarize/{userId}",
+    model: "Voyage AI voyage-3-lite · pgvector · Groq LLaMA 3.1",
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-500/5",
+    border: "border-blue-500/20",
+    details: [
+      "Patient uploads PDF → documentservice saves to S3 → publishes Kafka event",
+      "aiservice consumes event: downloads PDF → Apache PDFBox text extraction",
+      "Fixed-size chunking: 500 chars, 100 char overlap",
+      "Voyage AI voyage-3-lite embeds each chunk (512-dim), stored in pgvector via JdbcTemplate + ::vector cast",
+      "21s Thread.sleep between chunks (Voyage free tier: 3 RPM)",
+      "On doctor query: embed query → cosine similarity search → top-K chunks → Groq generates 3-point clinical summary",
+    ],
+    decision: "Fixed-size chunking chosen over semantic/agentic — medical documents are 1-5 pages, agentic chunking would have tripled API calls against the 3 RPM limit for zero measurable quality gain. JdbcTemplate used instead of Hibernate to bypass custom column type limitations with pgvector.",
+  },
+  {
+    icon: MessageSquare,
+    title: "MCP Booking Agent (ReAct)",
+    endpoint: "POST /api/v1/ai/agent/chat",
+    model: "Groq qwen3-32b",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-500/5",
+    border: "border-emerald-500/20",
+    details: [
+      "5 tools: search_doctors · get_available_slots · book_appointment · get_my_appointments · create_payment_order",
+      "ReAct loop: reason → call tool → observe result → reason again (max 10 iterations)",
+      "Redis slot session injection: real doctorId + slotIds stored in Redis per userId, injected as SYSTEM message at position 1 before every LLM call",
+      "400 correction loop: if LLM passes string slotId instead of integer, error injected back → forces re-fetch",
+      "Floating chat widget in frontend (patients only)",
+    ],
+    decision: "LLM hallucination problem — qwen3-32b would invent slotId=123 in later turns because conversation history only carries text, not structured tool results. Redis injection gives the LLM ground truth IDs on every call, eliminating hallucinations. This was the hardest engineering problem in the project.",
+  },
+  {
+    icon: Zap,
+    title: "Post-Consultation AI Notes",
+    endpoint: "Kafka: consultation-notes-ready",
+    model: "Groq llama-3.1-8b-instant · temperature=0.3",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-500/5",
+    border: "border-amber-500/20",
+    details: [
+      "Doctor types notes during video call (ConsultationNotesPanel — auto-saves every 30s to DRAFT status)",
+      "Doctor clicks 'End Call & Save' → appointmentservice saves notes → publishes to consultation-notes-ready Kafka topic",
+      "aiservice consumer picks up event: formats medications as numbered list (Drug | Dose | Freq | Route)",
+      "buildPrompt() creates a 7-section contract: Consultation Summary · Diagnosis · Medications · Tests · Recovery · Follow-up · Disclaimer",
+      "temperature=0.3: consistency over creativity — medical docs must be literal",
+      "AI report saved back via Feign → AppointmentClient.updateAiReport()",
+      "Patient sees report in MyConsultationReports between Upcoming/History sections",
+    ],
+    decision: "Kafka used (not Feign) because report generation takes 5-10 seconds. Direct call would freeze the doctor's End Call button for 10 seconds — unacceptable UX. Exceptions swallowed in consumer (not rethrown): notes are already saved in DB, AI report is enhancement not blocker. Rethrowing would freeze the partition and block every other patient's report.",
+  },
+];
+
+const ENGINEERING_DECISIONS = [
+  {
+    icon: Lock,
+    title: "Double-Booking Race Condition",
+    problem: "Two patients could book the same slot simultaneously — both pass the AVAILABLE check before either writes BOOKED.",
+    solution: "@Version on DoctorSlot entity. Hibernate generates: UPDATE doctor_slot SET status='BOOKED', version=2 WHERE id=5 AND version=1. Only one thread succeeds. The other gets ObjectOptimisticLockingFailureException → HTTP 409.",
+    why: "Optimistic over pessimistic because true slot contention is rare. Pessimistic (SELECT FOR UPDATE) would queue all booking requests under load.",
+  },
+  {
+    icon: RefreshCw,
+    title: "JWT + Refresh Token Rotation",
+    problem: "Access tokens that never expire are a security liability. But requiring re-login every 15 minutes breaks UX.",
+    solution: "Access token (15 min) in Authorization header. Refresh token (7 days) in HttpOnly cookie stored in DB. On refresh: old token deleted, new token issued. Stolen refresh tokens become invalid after first legitimate use.",
+    why: "HttpOnly cookie prevents XSS token theft. DB storage enables explicit revocation on logout. Rotation means a compromised token has a very limited attack window.",
+  },
+  {
+    icon: Database,
+    title: "Redis Cache-Aside + TTL (Defense in Depth)",
+    problem: "Doctor listings hit the DB on every request. A single cache eviction failure would serve stale data indefinitely.",
+    solution: "@Cacheable on GET /api/v1/doctor/all (doctors::all key) + @CacheEvict on any approval/rejection + 10-minute TTL as safety net.",
+    why: "@CacheEvict alone: if Redis has a brief outage during approval, eviction fails silently → stale data forever. TTL alone: stale for up to 10 minutes after every state change. Together: immediate freshness + bounded staleness window.",
+  },
+  {
+    icon: Zap,
+    title: "Kafka for Async Notification Decoupling",
+    problem: "If appointmentservice called notificationservice via Feign and the notification service was down, the booking would fail — two completely unrelated concerns sharing a failure surface.",
+    solution: "appointmentservice publishes NotificationEvent to Kafka and returns immediately. notificationservice consumes when available. Kafka retains events during downtime.",
+    why: "Temporal decoupling. Booking is a synchronous, critical path. Notification delivery is best-effort. They should have independent failure surfaces.",
+  },
+  {
+    icon: Shield,
+    title: "OTP via Redis (not PostgreSQL)",
+    problem: "Email OTPs are ephemeral — they expire in 10 minutes, are one-time use, and need fast lookup.",
+    solution: "Redis key: otp:{email} with 10-minute EXPIRE. On successful verification: key deleted immediately (one-time use). SecureRandom for generation (not java.util.Random).",
+    why: "Redis native TTL eliminates the need for a cron cleanup job. Sub-millisecond reads. Zero schema overhead. PostgreSQL would be the wrong tool for ephemeral data.",
+  },
+  {
+    icon: Server,
+    title: "Spring Cloud Gateway (WebFlux, not MVC)",
+    problem: "A gateway that blocks one thread per request would become a bottleneck under load — it's the single entry point for all 13 services.",
+    solution: "Spring Cloud Gateway 5.0 built on Project Reactor (Netty). Non-blocking, event-loop-based. JwtAuthGatewayFilter validates JWT, injects X-User-Id and X-Roles headers. Downstream services read headers — they do NOT re-validate JWT.",
+    why: "The gateway does almost nothing except validate and forward. Non-blocking I/O handles thousands of concurrent connections with a small thread pool. JWT validation at gateway = single point of trust, not repeated in every service.",
+  },
+];
+
+const TECH_STACK = [
+  { category: "Backend",           items: ["Java 21", "Spring Boot 4", "Spring Cloud Gateway 5.0", "Eureka", "OpenFeign", "Resilience4j", "Hibernate 7", "JPA", "Maven"] },
+  { category: "AI & LLM",          items: ["Groq llama-3.1-8b-instant", "Groq qwen3-32b", "Voyage AI voyage-3-lite", "pgvector", "Spring AI", "Apache PDFBox"] },
+  { category: "Messaging & Cache", items: ["Apache Kafka 3.x", "Redis 7.x", "Spring Kafka"] },
+  { category: "Frontend",          items: ["Next.js 14 (App Router)", "TypeScript", "Redux Toolkit", "Tailwind CSS", "shadcn/ui", "Framer Motion"] },
+  { category: "Infrastructure",    items: ["Docker", "Docker Compose", "GitHub Actions CI/CD", "Multi-arch builds (amd64 + arm64)", "AWS S3", "ZEGOCLOUD", "Razorpay"] },
+  { category: "Database",          items: ["PostgreSQL (x9 separate DBs)", "pgvector extension", "Redis"] },
+];
+
+const fadeUp = {
+  hidden:  { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+const stagger = { visible: { transition: { staggerChildren: 0.07 } } };
+
+export default function DelmaProjectPage() {
+  const router = useRouter();
+
+  return (
+    <main className="min-h-screen bg-background">
+
+      {/* ── HERO ── */}
+      <section className="relative overflow-hidden border-b border-border/40">
+        <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" />
+        <div className="max-w-[1100px] mx-auto px-6 pt-28 pb-16 relative z-10">
+
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4 }}>
+            <button
+              onClick={() => {
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="inline-flex items-center gap-1.5 font-mono-custom text-xs
+                         tracking-widest uppercase text-muted-foreground
+                         hover:text-[#78355b] transition-colors mb-8 group"
+            >
+              <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+              Back
+            </button>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.1 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#78355b] animate-pulse" />
+              <span className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b]">
+                Full Case Study
+              </span>
+            </div>
+
+            <h1 className="font-display text-5xl md:text-7xl text-foreground mb-4">
+              Delma
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground font-light
+                          max-w-[640px] leading-relaxed mb-8">
+              AI-powered healthcare platform. 13 Spring Boot microservices.
+              4 LLM features. Built from scratch.
+            </p>
+
+            <div className="flex flex-wrap gap-3 mb-8">
+              {[
+                ["13", "Microservices"],
+                ["4",  "AI Features"],
+                ["3",  "Kafka Topics"],
+                ["9",  "Databases"],
+                ["2",  "Arch Targets"],
+              ].map(([val, lbl]) => (
+                <div key={lbl}
+                     className="border border-border/80 rounded-xl px-4 py-3
+                                bg-card/50 backdrop-blur-sm text-center">
+                  <p className="font-display text-2xl text-foreground leading-none mb-0.5">{val}</p>
+                  <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                text-muted-foreground">{lbl}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a href="https://delma.aakashtyagi.in" target="_blank" rel="noopener noreferrer"
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#78355b]
+                            text-white text-sm font-medium hover:bg-[#5e2947] transition-colors">
+                <ExternalLink size={14} />
+                Live Platform
+              </a>
+              <a href="https://github.com/AakashTyagi354/delma2.0_spring_microservice"
+                 target="_blank" rel="noopener noreferrer"
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
+                            border-border/80 text-sm text-muted-foreground
+                            hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+                <Github size={14} />
+                Backend Repo
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="max-w-[1100px] mx-auto px-6 py-16 space-y-24">
+
+        {/* ── SERVICES MAP ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              01 — Architecture
+            </p>
+            <h2 className="font-display text-4xl text-foreground">13 Services</h2>
+            <p className="mt-2 text-muted-foreground max-w-[480px] leading-relaxed">
+              Each service owns its data, scales independently, and fails without taking
+              down the rest of the platform.
+            </p>
+          </motion.div>
+
+          <motion.div variants={stagger}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {SERVICES.map((svc) => (
+              <motion.div key={svc.name} variants={fadeUp}
+                          className="border border-border/80 rounded-xl p-4
+                                     bg-card/50 backdrop-blur-sm card-hover">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="font-mono-custom text-sm font-medium text-foreground">
+                    {svc.name}
+                  </span>
+                  <span className={`font-mono-custom text-[10px] px-2 py-0.5 rounded-full
+                                    border ${TAG_COLORS[svc.tag]}`}>
+                    {svc.tag}
+                  </span>
+                </div>
+                <p className="font-mono-custom text-[10px] text-muted-foreground/50
+                               tracking-wider mb-1.5">
+                  :{svc.port}
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{svc.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp}
+                      className="mt-6 border border-border/60 rounded-2xl p-5 bg-card/30">
+            <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                           text-amber-600 dark:text-amber-400 mb-3">
+              Kafka Topics
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { topic: "notification-topic",       desc: "Appointment confirmations, doctor approvals" },
+                { topic: "document-uploaded",        desc: "Triggers RAG indexing in aiservice" },
+                { topic: "consultation-notes-ready", desc: "Triggers AI report generation" },
+              ].map((t) => (
+                <div key={t.topic}
+                     className="border border-amber-500/20 rounded-xl px-4 py-3 bg-amber-500/5">
+                  <p className="font-mono-custom text-xs text-amber-700 dark:text-amber-400
+                                 font-medium mb-0.5">
+                    {t.topic}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t.desc}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.section>
+
+        {/* ── AI FEATURES ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              02 — AI Features
+            </p>
+            <h2 className="font-display text-4xl text-foreground">4 LLM-Powered Features</h2>
+            <p className="mt-2 text-muted-foreground max-w-[480px] leading-relaxed">
+              Each feature solves a real clinical problem.
+              Each has specific engineering decisions worth explaining.
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col gap-6">
+            {AI_FEATURES.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div key={feature.title} variants={fadeUp}
+                            className={`border rounded-2xl overflow-hidden bg-card/50 backdrop-blur-sm ${feature.border}`}>
+                  {/* Header */}
+                  <div className={`${feature.bg} border-b ${feature.border} px-6 py-4
+                                   flex items-start justify-between gap-4 flex-wrap`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl border ${feature.border}
+                                       flex items-center justify-center`}>
+                        <Icon size={16} className={feature.color} />
+                      </div>
+                      <div>
+                        <h3 className="font-display text-xl text-foreground">{feature.title}</h3>
+                        <p className="font-mono-custom text-[10px] tracking-wider
+                                       text-muted-foreground/70 mt-0.5">
+                          {feature.endpoint}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-mono-custom text-[10px] px-3 py-1.5 rounded-full
+                                      border ${feature.border} ${feature.color} bg-background/60`}>
+                      {feature.model}
+                    </span>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6">
+                    <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                   text-muted-foreground/60 mb-3">
+                      How it works
+                    </p>
+                    <ul className="space-y-2 mb-6">
+                      {feature.details.map((d, di) => (
+                        <li key={di} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                          <span className={`${feature.color} mt-0.5 flex-shrink-0 font-mono-custom text-xs`}>
+                            {String(di + 1).padStart(2, "0")}
+                          </span>
+                          <span>{d}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* FIX: was mixed quotes — now proper template literal */}
+                    <div className={`border ${feature.border} rounded-xl p-4 ${feature.bg}`}>
+                      <p className={`font-mono-custom text-[10px] tracking-widest uppercase mb-2 ${feature.color}`}>
+                        Engineering decision
+                      </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {feature.decision}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        {/* ── PLATFORM FEATURES ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              03 — Platform Features
+            </p>
+            <h2 className="font-display text-4xl text-foreground">Core Platform</h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                icon: Video,
+                title: "Video Consultations",
+                color: "text-blue-500",
+                points: [
+                  "ZEGOCLOUD SDK with AES-256 per-session encryption",
+                  "Appointment-scoped video tokens generated server-side",
+                  "ConsultationNotesPanel for doctors (auto-saves every 30s)",
+                  "Authorization check: only participants can get video token",
+                ],
+              },
+              {
+                icon: Shield,
+                title: "Auth & Security",
+                color: "text-emerald-500",
+                points: [
+                  "Email OTP verification — 6-digit, Redis TTL 10min, one-time use",
+                  "JWT access (15min) + refresh rotation (7 days, HttpOnly cookie)",
+                  "Refresh tokens stored in DB — explicit revocation on logout",
+                  "Gateway-level JWT validation — X-User-Id/X-Roles header injection",
+                ],
+              },
+              {
+                icon: FileText,
+                title: "Medical Documents",
+                color: "text-amber-500",
+                points: [
+                  "Upload to AWS S3 — presigned URLs with 10-minute TTL",
+                  "Access control: only the uploading patient + their assigned doctor",
+                  "Kafka event on upload triggers RAG indexing in aiservice",
+                  "Metadata stored in PostgreSQL, files in S3 (separation of concerns)",
+                ],
+              },
+              {
+                icon: ShoppingBag,
+                title: "Medical E-Store",
+                color: "text-purple-500",
+                points: [
+                  "Product catalog via productservice + categoryservice",
+                  "Cart management and order lifecycle in orderservice",
+                  "Razorpay payment with HMAC-SHA256 signature verification",
+                  "Order confirmation via Kafka → notificationservice → email",
+                ],
+              },
+              {
+                icon: Bell,
+                title: "Real-time Notifications",
+                color: "text-red-500",
+                points: [
+                  "Kafka consumer in notificationservice (notification-topic)",
+                  "Triggers on: booking confirmation, doctor approval, order updates",
+                  "Gmail SMTP delivery + in-app notification persistence",
+                  "Frontend: 5-minute module-level TTL cache (not useState — survives remounts)",
+                ],
+              },
+              {
+                icon: Layers,
+                title: "Doctor Workflow",
+                color: "text-teal-500",
+                points: [
+                  "Apply → pending review → admin approves via Feign chain (user→doctor→user)",
+                  "Redis cache-aside on listings (@Cacheable + @CacheEvict + TTL)",
+                  "Slot management: doctor creates availability windows",
+                  "Doctor profile search by name or specialization",
+                ],
+              },
+            ].map((feat) => {
+              const Icon = feat.icon;
+              return (
+                <motion.div key={feat.title} variants={fadeUp}
+                            className="border border-border/80 rounded-2xl p-5
+                                       bg-card/50 backdrop-blur-sm card-hover">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <Icon size={16} className={feat.color} />
+                    <h3 className="font-display text-lg text-foreground">{feat.title}</h3>
+                  </div>
+                  <ul className="space-y-2">
+                    {feat.points.map((p, pi) => (
+                      <li key={pi} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <ChevronRight size={12} className={`${feat.color} mt-0.5 flex-shrink-0`} />
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        {/* ── ENGINEERING DECISIONS ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              04 — Engineering Decisions
+            </p>
+            <h2 className="font-display text-4xl text-foreground">Why I built it this way</h2>
+            <p className="mt-2 text-muted-foreground max-w-[480px] leading-relaxed">
+              Every non-obvious decision has a reason. These are the ones
+              worth explaining to a senior engineer.
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col gap-4">
+            {ENGINEERING_DECISIONS.map((dec) => {
+              const Icon = dec.icon;
+              return (
+                <motion.div key={dec.title} variants={fadeUp}
+                            className="border border-border/80 rounded-2xl overflow-hidden
+                                       bg-card/50 backdrop-blur-sm card-hover">
+                  <div className="p-5 md:p-6">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <Icon size={16} className="text-[#78355b]" />
+                      <h3 className="font-display text-xl text-foreground">{dec.title}</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border border-red-500/15 rounded-xl p-4 bg-red-500/5">
+                        <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                       text-red-500 mb-2">
+                          Problem
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{dec.problem}</p>
+                      </div>
+                      <div className="border border-emerald-500/15 rounded-xl p-4 bg-emerald-500/5">
+                        <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                       text-emerald-600 dark:text-emerald-400 mb-2">
+                          Solution
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{dec.solution}</p>
+                      </div>
+                      <div className="border border-[#78355b]/15 rounded-xl p-4 bg-[#78355b]/5">
+                        <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                                       text-[#78355b] mb-2">
+                          Why this approach
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{dec.why}</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        {/* ── TECH STACK ── */}
+        <motion.section variants={stagger} initial="hidden"
+                        whileInView="visible" viewport={{ once: true }}>
+          <motion.div variants={fadeUp} className="mb-10">
+            <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+              05 — Stack
+            </p>
+            <h2 className="font-display text-4xl text-foreground">Full Tech Stack</h2>
+          </motion.div>
+
+          <motion.div variants={stagger}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TECH_STACK.map((group) => (
+              <motion.div key={group.category} variants={fadeUp}
+                          className="border border-border/80 rounded-2xl p-5 bg-card/50 backdrop-blur-sm">
+                <p className="font-mono-custom text-[10px] tracking-widest uppercase
+                               text-muted-foreground/60 mb-3">
+                  {group.category}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.items.map((item) => (
+                    <span key={item}
+                          className="skill-pill font-mono-custom text-[11px] px-2.5 py-1
+                                     rounded-full border border-border/80 text-muted-foreground
+                                     bg-background/60">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.section>
+
+        {/* ── CI/CD ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="border border-border/60 rounded-2xl p-6 md:p-8 bg-card/30 backdrop-blur-sm"
+        >
+          <div className="flex items-center gap-2.5 mb-6">
+            <GitBranch size={16} className="text-[#78355b]" />
+            <h3 className="font-display text-2xl text-foreground">CI/CD Pipeline</h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 font-mono-custom text-xs text-muted-foreground">
+            {[
+              "Push to main",
+              "→ GitHub Actions",
+              "→ mvn clean install",
+              "→ Docker Buildx (amd64 + arm64)",
+              "→ Docker Hub (aakash354/delma-*)",
+              "→ Hetzner CX31 (8GB RAM)",
+            ].map((step, i) => (
+              <span key={i}
+                    className={`px-3 py-1.5 rounded-lg border ${
+                      i === 0
+                        ? "border-[#78355b]/30 bg-[#78355b]/5 text-[#78355b]"
+                        : "border-border/60 bg-background/60"
+                    }`}>
+                {step}
+              </span>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Multi-arch builds mean the same image runs on both the Hetzner production
+            server (amd64) and Apple Silicon development machines (arm64)
+            without architecture-specific Dockerfiles.
+          </p>
+        </motion.section>
+
+        {/* ── FOOTER CTA ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col md:flex-row items-start md:items-center
+                     justify-between gap-6 pt-8 border-t border-border/40"
+        >
+          <div>
+            <p className="font-display text-2xl text-foreground mb-1">Want to dig deeper?</p>
+            <p className="text-muted-foreground text-sm">
+              Full source code on GitHub. README covers every service in detail.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <a href="https://delma.aakashtyagi.in" target="_blank" rel="noopener noreferrer"
+               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#78355b]
+                          text-white text-sm font-medium hover:bg-[#5e2947] transition-colors">
+              <ExternalLink size={14} />
+              Live Platform
+            </a>
+            <a href="https://github.com/AakashTyagi354/delma2.0_spring_microservice"
+               target="_blank" rel="noopener noreferrer"
+               className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
+                          border-border/80 text-sm text-muted-foreground
+                          hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+              <Github size={14} />
+              GitHub
+            </a>
+            <Link href="/#contact"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl border
+                             border-border/80 text-sm text-muted-foreground
+                             hover:border-[#78355b]/40 hover:text-[#78355b] transition-colors">
+              Get in touch
+            </Link>
+          </div>
+        </motion.div>
+
+      </div>
+    </main>
+  );
+}
+
+===== ./app/layout.tsx =====
+// ── app/layout.tsx ──────────────────────────────────────────────────────────
+// Replace your existing app/layout.tsx with this
+
+import type { Metadata } from "next";
+import "./globals.css";
+import Header from "@/components/Header";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+
+export const metadata: Metadata = {
+  title: "Aakash Tyagi — Backend Engineer",
+  description: "...",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-background font-body antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Header />
+          <main>{children}</main>
+          <Toaster />
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+
+===== ./app/page.tsx =====
+import Contact from "@/components/Contact";
+import Info from "@/components/Info";
+import Projects from "@/components/Projects";
+import SkillsTwo from "@/components/SkillsTwo";
+
+export default function Home() {
+  return (
+    <main className="flex flex-col items-center w-full">
+      <div className="w-full" id="home">
+        <Info />
+      </div>
+      <div className="w-full" id="projects">
+        <Projects />
+      </div>
+      <div className="w-full" id="skills">
+        <SkillsTwo />
+      </div>
+      <div className="w-full" id="contact">
+        <Contact />
+      </div>
+    </main>
+  );
+}
+
+===== ./app/globals.css =====
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode */
+    --background: 0 0% 97%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    --primary: 220 20% 10%;
+    --primary-foreground: 0 0% 97%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 20% 10%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 20% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 97%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 220 20% 10%;
+    --radius: 0.5rem;
+
+    /* Brand */
+    --brand: #78355b;
+    --brand-light: #f5e8f0;
+    --brand-mid: #c4869f;
+  }
+
+  .dark {
+    --background: 224 20% 7%;
+    --foreground: 210 20% 90%;
+    --card: 224 20% 9%;
+    --card-foreground: 210 20% 90%;
+    --popover: 224 20% 9%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 210 20% 90%;
+    --primary-foreground: 224 20% 7%;
+    --secondary: 224 18% 13%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 224 18% 13%;
+    --muted-foreground: 215 16% 55%;
+    --accent: 224 18% 13%;
+    --accent-foreground: 210 20% 90%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 90%;
+    --border: 224 18% 15%;
+    --input: 224 18% 15%;
+    --ring: 215 20% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Sora', sans-serif;
+  }
+}
+
+/* ── Dot grid background ── */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(120, 53, 91, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.dark .dot-grid {
+  background-image: radial-gradient(circle, rgba(120, 53, 91, 0.2) 1px, transparent 1px);
+}
+
+/* ── Fonts ── */
+.font-display {
+  font-family: 'DM Serif Display', serif;
+}
+.font-mono-custom {
+  font-family: 'JetBrains Mono', monospace;
+}
+.font-body {
+  font-family: 'Sora', sans-serif;
+}
+
+/* ── Gradient text ── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--brand) 0%, #c4869f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Glow on hover ── */
+.card-hover {
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 0 0 1px rgba(120, 53, 91, 0.3), 0 8px 32px rgba(120, 53, 91, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(120, 53, 91, 0.3);
+}
+
+/* ── Skill pill hover ── */
+.skill-pill {
+  transition: all 0.2s ease;
+  cursor: default;
+}
+.skill-pill:hover {
+  background: rgba(120, 53, 91, 0.08);
+  border-color: rgba(120, 53, 91, 0.4);
+  color: var(--brand);
+}
+.dark .skill-pill:hover {
+  background: rgba(120, 53, 91, 0.15);
+  color: #c4869f;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(120, 53, 91, 0.3); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(120, 53, 91, 0.5); }
+
+/* ── Line decoration ── */
+.section-line::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: var(--brand);
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+===== ./next-env.d.ts =====
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/basic-features/typescript for more information.
+
+
+===== ./README.md =====
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+
+===== ./tailwind.config.ts =====
+import type { Config } from "tailwindcss"
+
+const config = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: { "2xl": "1400px" },
+    },
+    extend: {
+      fontFamily: {
+        display: ["DM Serif Display", "serif"],
+        mono: ["JetBrains Mono", "monospace"],
+        body:  ["Sora", "sans-serif"],
+      },
+      colors: {
+        border:      "hsl(var(--border))",
+        input:       "hsl(var(--input))",
+        ring:        "hsl(var(--ring))",
+        background:  "hsl(var(--background))",
+        foreground:  "hsl(var(--foreground))",
+        primary:     { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+        secondary:   { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        muted:       { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+        accent:      { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+        popover:     { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
+        card:        { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+        brand:       "#78355b",
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to:   { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to:   { height: "0" },
+        },
+        // Marquee for tech strip in hero
+        marquee: {
+          "0%":   { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up":   "accordion-up 0.2s ease-out",
+        marquee: "marquee 30s linear infinite",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config
+
+export default config
+
+===== ./schema/contact.ts =====
+import mongoose, { Document, Schema } from "mongoose";
+
+interface IContact extends Document {
+  Name: string;
+  Email: string;
+  Message: string;
+}
+
+const contactSchema: Schema<IContact> = new Schema(
+  {
+    Name: {
+      type: String,
+      required: true,
+    },
+    Email: {
+      type: String,
+      required: true,
+      unique: true, // assuming email should be unique
+      lowercase: true, // save emails in lowercase to ensure uniqueness
+      trim: true, // remove leading/trailing whitespace
+    },
+    Message: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Check if the model already exists to prevent redefining it
+export default mongoose.models.ContactUS ||
+  mongoose.model<IContact>("ContactUS", contactSchema);
+
+
+===== ./components/Projects.tsx =====
+"use client";
+import { motion } from "framer-motion";
+import { ExternalLink, Github, ArrowUpRight, BookOpen } from "lucide-react";
+import Link from "next/link";
+
+const PROJECTS = [
+  {
+    index: "01",
+    title: "Delma Health Platform",
+    subtitle: "AI Healthcare · 13 Microservices",
+    description:
+      "Full-stack AI healthcare platform built from scratch. Spring Cloud Gateway handles JWT auth and routes to 13 independent services. Kafka decouples async flows — notification delivery, RAG document indexing, and AI report generation all run in the background without blocking the request thread.",
+    highlights: [
+      "RAG pipeline: Voyage AI embeddings (512-dim) → pgvector cosine search → Groq 3-point clinical summary",
+      "MCP Booking Agent: ReAct pattern with 5 tools, Redis slot injection solves LLM hallucination",
+      "Post-consultation AI notes: Kafka → Groq llama-3.1 → 7-section patient report, temperature=0.3",
+      "Optimistic locking (@Version) prevents double-booking race condition → HTTP 409",
+      "GitHub Actions CI/CD: multi-arch Docker builds (amd64 + arm64) → Docker Hub",
+    ],
+    tags: ["Spring Boot","Spring Cloud","Kafka","Redis","pgvector","Groq","Voyage AI","Next.js 14","Docker"],
+    live: "https://delma.aakashtyagi.in",
+    code: "https://github.com/AakashTyagi354/delma2.0_spring_microservice",
+    caseStudy: "/projects/delma",
+    featured: true,
+  },
+  {
+    index: "02",
+    title: "MindCraftAI",
+    subtitle: "AI Tools Platform",
+    description:
+      "Platform integrating multiple generative AI capabilities — code generation, video creation, music generation, and image synthesis. Built with Next.js 14 and OpenAI APIs.",
+    highlights: [
+      "AI-powered code generation with syntax highlighting",
+      "Video and music generation via OpenAI models",
+      "Auth with Clerk, billing with Stripe",
+    ],
+    tags: ["Next.js","TypeScript","OpenAI","Tailwind","MySQL"],
+    live: "https://mind-craft-f4u8lqqbo-aakashtyagi354.vercel.app/",
+    code: "https://github.com/AakashTyagi354/MindCraftAi",
+    caseStudy: null,
+    featured: false,
+  },
+];
+
+export default function Projects() {
+  return (
+    <section id="projects" className="max-w-[1100px] mx-auto px-6 py-24">
+      <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }}
+                  viewport={{ once:true }} transition={{ duration:0.5 }} className="mb-14">
+        <p className="font-mono-custom text-xs tracking-[0.2em] uppercase text-[#78355b] mb-3">
+          01 — Work
+        </p>
+        <h2 className="font-display text-4xl md:text-5xl text-foreground">Projects</h2>
+        <p className="mt-3 text-muted-foreground max-w-[480px] leading-relaxed">
+          Production-grade systems, not tutorial clones. Every project has real engineering decisions behind it.
+        </p>
+      </motion.div>
+
+      <div className="flex flex-col gap-6">
+        {PROJECTS.map((project, i) => (
+          <motion.div key={project.title}
+            initial={{ opacity:0, y:30 }} whileInView={{ opacity:1, y:0 }}
+            viewport={{ once:true }} transition={{ duration:0.5, delay:i*0.12 }}
+            className={`border rounded-2xl overflow-hidden bg-card/50 backdrop-blur-sm card-hover
+                        ${project.featured ? "border-[#78355b]/25" : "border-border/80"}`}
+          >
+            {project.featured && (
+              <div className="bg-[#78355b]/08 border-b border-[#78355b]/15 px-6 py-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#78355b]" />
+                <span className="font-mono-custom text-[10px] tracking-widest uppercase text-[#78355b]">
+                  Featured
+                </span>
+              </div>
+            )}
+            <div className="p-6 md:p-8">
+              <div className="flex items-start justify-between gap-6 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="font-mono-custom text-xs text-muted-foreground/50 tracking-widest">
+                      {project.index}
+                    </span>
+                    <span className="font-mono-custom text-xs tracking-widest uppercase text-muted-foreground">
+                      {project.subtitle}
+                    </span>
+                  </div>
+                  <h3 className="font-display text-2xl md:text-3xl text-foreground mb-3">{project.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-5 max-w-[600px]">{project.description}</p>
+                  <ul className="space-y-2 mb-6">
+                    {project.highlights.map((h, hi) => (
+                      <li key={hi} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className="text-[#78355b] mt-1 flex-shrink-0">→</span>
+                        <span>{h}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-wrap gap-1.5">
+                    {project.tags.map((tag) => (
+                      <span key={tag} className="font-mono-custom text-[10px] px-2.5 py-1 rounded-full
+                                                  border border-border/80 text-muted-foreground/70 bg-background/60">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 flex-shrink-0">
+                  <a href={project.live} target="_blank" rel="noopener noreferrer"
+                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#78355b] text-white
+                                text-sm font-medium hover:bg-[#5e2947] transition-colors whitespace-nowrap">
+                    <ExternalLink size={13} /> Live
+                  </a>
+                  <a href={project.code} target="_blank" rel="noopener noreferrer"
+                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border/80
+                                text-sm text-muted-foreground hover:border-[#78355b]/40
+                                hover:text-[#78355b] transition-colors whitespace-nowrap">
+                    <Github size={13} /> Code
+                  </a>
+                  {project.caseStudy && (
+                    <Link href={project.caseStudy}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border
+                                     border-[#78355b]/30 text-sm text-[#78355b] hover:bg-[#78355b]/08
+                                     transition-colors whitespace-nowrap font-medium">
+                      <BookOpen size={13} /> Full Details
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }}
+                  viewport={{ once:true }} transition={{ duration:0.5, delay:0.3 }}
+                  className="mt-8 flex justify-center">
+        <a href="https://github.com/AakashTyagi354" target="_blank" rel="noopener noreferrer"
+           className="flex items-center gap-2 font-mono-custom text-xs tracking-widest uppercase
+                      text-muted-foreground hover:text-[#78355b] transition-colors">
+          More on GitHub <ArrowUpRight size={13} />
+        </a>
+      </motion.div>
+    </section>
+  );
+}
+
+===== ./components/theme-provider.tsx =====
+"use client"
+
+import * as React from "react"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { type ThemeProviderProps } from "next-themes/dist/types"
+
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+}
+
+
+===== ./components/ui/toaster.tsx =====
+"use client"
+
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "@/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
+
+export function Toaster() {
+  const { toasts } = useToast()
+
+  return (
+    <ToastProvider>
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+      <ToastViewport />
+    </ToastProvider>
+  )
+}
+
+
+===== ./components/ui/label.tsx =====
+"use client"
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+)
+
+const Label = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+    VariantProps<typeof labelVariants>
+>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(labelVariants(), className)}
+    {...props}
+  />
+))
+Label.displayName = LabelPrimitive.Root.displayName
+
+export { Label }
+
+
+===== ./components/ui/use-toast.ts =====
+"use client"
+
+// Inspired by react-hot-toast library
+import * as React from "react"
+
+import type {
+  ToastActionElement,
+  ToastProps,
+} from "@/components/ui/toast"
+
+const TOAST_LIMIT = 1
+const TOAST_REMOVE_DELAY = 1000000
+
+type ToasterToast = ToastProps & {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: ToastActionElement
+}
+
+const actionTypes = {
+  ADD_TOAST: "ADD_TOAST",
+  UPDATE_TOAST: "UPDATE_TOAST",
+  DISMISS_TOAST: "DISMISS_TOAST",
+  REMOVE_TOAST: "REMOVE_TOAST",
+} as const
+
+let count = 0
+
+function genId() {
+  count = (count + 1) % Number.MAX_SAFE_INTEGER
+  return count.toString()
+}
+
+type ActionType = typeof actionTypes
+
+type Action =
+  | {
+      type: ActionType["ADD_TOAST"]
+      toast: ToasterToast
+    }
+  | {
+      type: ActionType["UPDATE_TOAST"]
+      toast: Partial<ToasterToast>
+    }
+  | {
+      type: ActionType["DISMISS_TOAST"]
+      toastId?: ToasterToast["id"]
+    }
+  | {
+      type: ActionType["REMOVE_TOAST"]
+      toastId?: ToasterToast["id"]
+    }
+
+interface State {
+  toasts: ToasterToast[]
+}
+
+const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
+const addToRemoveQueue = (toastId: string) => {
+  if (toastTimeouts.has(toastId)) {
+    return
+  }
+
+  const timeout = setTimeout(() => {
+    toastTimeouts.delete(toastId)
+    dispatch({
+      type: "REMOVE_TOAST",
+      toastId: toastId,
+    })
+  }, TOAST_REMOVE_DELAY)
+
+  toastTimeouts.set(toastId, timeout)
+}
+
+export const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "ADD_TOAST":
+      return {
+        ...state,
+        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+      }
+
+    case "UPDATE_TOAST":
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === action.toast.id ? { ...t, ...action.toast } : t
+        ),
+      }
+
+    case "DISMISS_TOAST": {
+      const { toastId } = action
+
+      // ! Side effects ! - This could be extracted into a dismissToast() action,
+      // but I'll keep it here for simplicity
+      if (toastId) {
+        addToRemoveQueue(toastId)
+      } else {
+        state.toasts.forEach((toast) => {
+          addToRemoveQueue(toast.id)
+        })
+      }
+
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === toastId || toastId === undefined
+            ? {
+                ...t,
+                open: false,
+              }
+            : t
+        ),
+      }
+    }
+    case "REMOVE_TOAST":
+      if (action.toastId === undefined) {
+        return {
+          ...state,
+          toasts: [],
+        }
+      }
+      return {
+        ...state,
+        toasts: state.toasts.filter((t) => t.id !== action.toastId),
+      }
+  }
+}
+
+const listeners: Array<(state: State) => void> = []
+
+let memoryState: State = { toasts: [] }
+
+function dispatch(action: Action) {
+  memoryState = reducer(memoryState, action)
+  listeners.forEach((listener) => {
+    listener(memoryState)
+  })
+}
+
+type Toast = Omit<ToasterToast, "id">
+
+function toast({ ...props }: Toast) {
+  const id = genId()
+
+  const update = (props: ToasterToast) =>
+    dispatch({
+      type: "UPDATE_TOAST",
+      toast: { ...props, id },
+    })
+  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+
+  dispatch({
+    type: "ADD_TOAST",
+    toast: {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) dismiss()
+      },
+    },
+  })
+
+  return {
+    id: id,
+    dismiss,
+    update,
+  }
+}
+
+function useToast() {
+  const [state, setState] = React.useState<State>(memoryState)
+
+  React.useEffect(() => {
+    listeners.push(setState)
+    return () => {
+      const index = listeners.indexOf(setState)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, [state])
+
+  return {
+    ...state,
+    toast,
+    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+  }
+}
+
+export { useToast, toast }
+
+
+===== ./components/ui/button.tsx =====
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+
+
+===== ./components/ui/toast.tsx =====
+"use client"
+
+import * as React from "react"
+import * as ToastPrimitives from "@radix-ui/react-toast"
+import { cva, type VariantProps } from "class-variance-authority"
+import { X } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const ToastProvider = ToastPrimitives.Provider
+
+const ToastViewport = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Viewport>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Viewport
+    ref={ref}
+    className={cn(
+      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      className
+    )}
+    {...props}
+  />
+))
+ToastViewport.displayName = ToastPrimitives.Viewport.displayName
+
+const toastVariants = cva(
+  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  {
+    variants: {
+      variant: {
+        default: "border bg-background text-foreground",
+        destructive:
+          "destructive group border-destructive bg-destructive text-destructive-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+const Toast = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Root>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
+    VariantProps<typeof toastVariants>
+>(({ className, variant, ...props }, ref) => {
+  return (
+    <ToastPrimitives.Root
+      ref={ref}
+      className={cn(toastVariants({ variant }), className)}
+      {...props}
+    />
+  )
+})
+Toast.displayName = ToastPrimitives.Root.displayName
+
+const ToastAction = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Action>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Action
+    ref={ref}
+    className={cn(
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+      className
+    )}
+    {...props}
+  />
+))
+ToastAction.displayName = ToastPrimitives.Action.displayName
+
+const ToastClose = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Close>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Close
+    ref={ref}
+    className={cn(
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      className
+    )}
+    toast-close=""
+    {...props}
+  >
+    <X className="h-4 w-4" />
+  </ToastPrimitives.Close>
+))
+ToastClose.displayName = ToastPrimitives.Close.displayName
+
+const ToastTitle = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Title>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Title
+    ref={ref}
+    className={cn("text-sm font-semibold", className)}
+    {...props}
+  />
+))
+ToastTitle.displayName = ToastPrimitives.Title.displayName
+
+const ToastDescription = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Description>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Description
+    ref={ref}
+    className={cn("text-sm opacity-90", className)}
+    {...props}
+  />
+))
+ToastDescription.displayName = ToastPrimitives.Description.displayName
+
+type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
+
+type ToastActionElement = React.ReactElement<typeof ToastAction>
+
+export {
+  type ToastProps,
+  type ToastActionElement,
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastAction,
+}
+
+
+===== ./components/ui/dropdown-menu.tsx =====
+"use client"
+
+import * as React from "react"
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { Check, ChevronRight, Circle } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const DropdownMenu = DropdownMenuPrimitive.Root
+
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
+
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal
+
+const DropdownMenuSub = DropdownMenuPrimitive.Sub
+
+const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
+
+const DropdownMenuSubTrigger = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+    inset?: boolean
+  }
+>(({ className, inset, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubTrigger
+    ref={ref}
+    className={cn(
+      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <ChevronRight className="ml-auto h-4 w-4" />
+  </DropdownMenuPrimitive.SubTrigger>
+))
+DropdownMenuSubTrigger.displayName =
+  DropdownMenuPrimitive.SubTrigger.displayName
+
+const DropdownMenuSubContent = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubContent
+    ref={ref}
+    className={cn(
+      "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuSubContent.displayName =
+  DropdownMenuPrimitive.SubContent.displayName
+
+const DropdownMenuContent = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        className
+      )}
+      {...props}
+    />
+  </DropdownMenuPrimitive.Portal>
+))
+DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
+
+const DropdownMenuItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean
+  }
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
+
+const DropdownMenuCheckboxItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
+>(({ className, children, checked, ...props }, ref) => (
+  <DropdownMenuPrimitive.CheckboxItem
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    checked={checked}
+    {...props}
+  >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Check className="h-4 w-4" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+    {children}
+  </DropdownMenuPrimitive.CheckboxItem>
+))
+DropdownMenuCheckboxItem.displayName =
+  DropdownMenuPrimitive.CheckboxItem.displayName
+
+const DropdownMenuRadioItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
+>(({ className, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.RadioItem
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Circle className="h-2 w-2 fill-current" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+    {children}
+  </DropdownMenuPrimitive.RadioItem>
+))
+DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
+
+const DropdownMenuLabel = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean
+  }
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Label
+    ref={ref}
+    className={cn(
+      "px-2 py-1.5 text-sm font-semibold",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName
+
+const DropdownMenuSeparator = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    {...props}
+  />
+))
+DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
+
+const DropdownMenuShortcut = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) => {
+  return (
+    <span
+      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
+      {...props}
+    />
+  )
+}
+DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
+
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+}
+
+
+===== ./components/ui/textarea.tsx =====
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <textarea
+        className={cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Textarea.displayName = "Textarea"
+
+export { Textarea }
+
+
+===== ./components/ui/input.tsx =====
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border-b border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
+
+export { Input }
+
+
+===== ./components/ui/form.tsx =====
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { Slot } from "@radix-ui/react-slot"
+import {
+  Controller,
+  ControllerProps,
+  FieldPath,
+  FieldValues,
+  FormProvider,
+  useFormContext,
+} from "react-hook-form"
+
+import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+
+const Form = FormProvider
+
+type FormFieldContextValue<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+> = {
+  name: TName
+}
+
+const FormFieldContext = React.createContext<FormFieldContextValue>(
+  {} as FormFieldContextValue
+)
+
+const FormField = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+>({
+  ...props
+}: ControllerProps<TFieldValues, TName>) => {
+  return (
+    <FormFieldContext.Provider value={{ name: props.name }}>
+      <Controller {...props} />
+    </FormFieldContext.Provider>
+  )
+}
+
+const useFormField = () => {
+  const fieldContext = React.useContext(FormFieldContext)
+  const itemContext = React.useContext(FormItemContext)
+  const { getFieldState, formState } = useFormContext()
+
+  const fieldState = getFieldState(fieldContext.name, formState)
+
+  if (!fieldContext) {
+    throw new Error("useFormField should be used within <FormField>")
+  }
+
+  const { id } = itemContext
+
+  return {
+    id,
+    name: fieldContext.name,
+    formItemId: `${id}-form-item`,
+    formDescriptionId: `${id}-form-item-description`,
+    formMessageId: `${id}-form-item-message`,
+    ...fieldState,
+  }
+}
+
+type FormItemContextValue = {
+  id: string
+}
+
+const FormItemContext = React.createContext<FormItemContextValue>(
+  {} as FormItemContextValue
+)
+
+const FormItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  const id = React.useId()
+
+  return (
+    <FormItemContext.Provider value={{ id }}>
+      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+    </FormItemContext.Provider>
+  )
+})
+FormItem.displayName = "FormItem"
+
+const FormLabel = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+>(({ className, ...props }, ref) => {
+  const { error, formItemId } = useFormField()
+
+  return (
+    <Label
+      ref={ref}
+      className={cn(error && "text-destructive", className)}
+      htmlFor={formItemId}
+      {...props}
+    />
+  )
+})
+FormLabel.displayName = "FormLabel"
+
+const FormControl = React.forwardRef<
+  React.ElementRef<typeof Slot>,
+  React.ComponentPropsWithoutRef<typeof Slot>
+>(({ ...props }, ref) => {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+
+  return (
+    <Slot
+      ref={ref}
+      id={formItemId}
+      aria-describedby={
+        !error
+          ? `${formDescriptionId}`
+          : `${formDescriptionId} ${formMessageId}`
+      }
+      aria-invalid={!!error}
+      {...props}
+    />
+  )
+})
+FormControl.displayName = "FormControl"
+
+const FormDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => {
+  const { formDescriptionId } = useFormField()
+
+  return (
+    <p
+      ref={ref}
+      id={formDescriptionId}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+})
+FormDescription.displayName = "FormDescription"
+
+const FormMessage = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, children, ...props }, ref) => {
+  const { error, formMessageId } = useFormField()
+  const body = error ? String(error?.message) : children
+
+  if (!body) {
+    return null
+  }
+
+  return (
+    <p
+      ref={ref}
+      id={formMessageId}
+      className={cn("text-sm font-medium text-destructive", className)}
+      {...props}
+    >
+      {body}
+    </p>
+  )
+})
+FormMessage.displayName = "FormMessage"
+
+export {
+  useFormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+}
+
+
+===== ./components/Info.tsx =====
+"use client";
+import { motion } from "framer-motion";
+import { Github, Linkedin, ExternalLink, ArrowRight } from "lucide-react";
+
+const STATS = [
+  { value: "13",        label: "Microservices"     },
+  { value: "4",         label: "AI Features"       },
+  { value: "1.5yr",     label: "Spring Boot"       }
+];
+
+const TECH_MARQUEE = [
+  "Spring Boot", "Kafka", "Redis", "pgvector", "Groq",
+  "Next.js 14", "Docker", "Voyage AI", "RAG", "MCP Agent",
+  "Spring Cloud", "PostgreSQL", "Kubernetes", "TypeScript",
+];
+
+export default function Info() {
+  return (
+    <section className="relative min-h-screen flex flex-col justify-center
+                        pt-[72px] overflow-hidden">
+
+      {/* Dot grid bg */}
+      <div className="absolute inset-0 dot-grid opacity-60 pointer-events-none" />
+
+      {/* Large decorative name watermark */}
+      <div className="absolute right-[-60px] top-[120px] select-none pointer-events-none
+                      hidden lg:block">
+        <p className="font-display text-[180px] leading-none
+                      text-foreground/[0.03] dark:text-white/[0.03]
+                      font-normal tracking-tight">
+          Aakash.
+        </p>
+      </div>
+
+      {/* Main content */}
+      <div className="max-w-[1100px] mx-auto px-6 w-full relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-16 items-start">
+
+          {/* Left column */}
+          <div>
+            {/* Role badge */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center gap-2 mb-8"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#78355b] animate-pulse" />
+              <span className="font-mono-custom text-xs tracking-[0.2em] uppercase
+                               text-muted-foreground">
+                Specialist Programmer · Infosys · Pune
+              </span>
+            </motion.div>
+
+            {/* Name */}
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="font-display text-[52px] md:text-[72px] leading-[1.05]
+                         text-foreground mb-2"
+            >
+              Aakash
+            </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.18 }}
+              className="font-display text-[52px] md:text-[72px] leading-[1.05]
+                         gradient-text mb-8"
+            >
+              Tyagi.
+            </motion.h1>
+
+            {/* Descriptor line */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.28 }}
+              className="text-lg md:text-xl text-muted-foreground font-light
+                         leading-relaxed max-w-[540px] mb-6"
+            >
+              Backend-heavy full stack engineer building{" "}
+              <span className="text-foreground font-medium">
+                distributed systems
+              </span>{" "}
+              and{" "}
+              <span className="text-foreground font-medium">
+                AI-powered products
+              </span>
+              .
+            </motion.p>
+
+            {/* Delma callout */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.36 }}
+              className="border border-border/80 rounded-xl p-4 mb-8 max-w-[560px]
+                         bg-card/50 backdrop-blur-sm card-hover"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="font-mono-custom text-[10px] tracking-widest
+                                     uppercase text-[#78355b]">
+                      Featured Project
+                    </span>
+                  </div>
+                  <p className="font-display text-xl text-foreground mb-1">
+                    Delma Health Platform
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    13 Spring Boot microservices · RAG pipeline (pgvector + Voyage AI) ·
+                    MCP booking agent (ReAct) · Post-consultation AI report generation via Groq
+                  </p>
+                </div>
+                <a
+                  href="https://delma.aakashtyagi.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 p-2 rounded-lg border border-border/60
+                             hover:border-[#78355b]/40 hover:text-[#78355b]
+                             text-muted-foreground transition-all"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {["Spring Cloud", "Kafka", "Redis", "pgvector", "Groq", "Next.js 14", "Docker"].map((t) => (
+                  <span
+                    key={t}
+                    className="font-mono-custom text-[10px] px-2 py-0.5
+                               bg-[#78355b]/08 text-[#78355b] dark:text-[#c4869f]
+                               border border-[#78355b]/20 rounded-full"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.44 }}
+              className="flex flex-wrap items-center gap-4 mb-10"
+            >
+              <a
+                href="#projects"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg
+                           bg-[#78355b] text-white text-sm font-medium
+                           hover:bg-[#5e2947] transition-colors"
+              >
+                View Work
+                <ArrowRight size={14} />
+              </a>
+              <a
+                href="https://github.com/AakashTyagi354"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg
+                           border border-border/80 text-sm text-muted-foreground
+                           hover:border-[#78355b]/40 hover:text-[#78355b]
+                           transition-colors"
+              >
+                <Github size={14} />
+                GitHub
+              </a>
+              <a
+                href="https://www.linkedin.com/in/aakash-tyagi-274228206/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg
+                           border border-border/80 text-sm text-muted-foreground
+                           hover:border-[#78355b]/40 hover:text-[#78355b]
+                           transition-colors"
+              >
+                <Linkedin size={14} />
+                LinkedIn
+              </a>
+            </motion.div>
+          </div>
+
+          {/* Right column — stats */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="hidden lg:flex flex-col gap-3 pt-4"
+          >
+            {STATS.map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 + i * 0.08 }}
+                className="border border-border/80 rounded-xl p-5 bg-card/50
+                           backdrop-blur-sm card-hover"
+              >
+                <p className="font-display text-3xl text-foreground mb-0.5">
+                  {stat.value}
+                </p>
+                <p className="font-mono-custom text-[11px] tracking-widest
+                               uppercase text-muted-foreground">
+                  {stat.label}
+                </p>
+              </motion.div>
+            ))}
+
+            {/* Targeting badge */}
+            {/* <div className="border border-border/80 rounded-xl p-4 bg-card/50
+                            backdrop-blur-sm mt-1">
+              <p className="font-mono-custom text-[10px] tracking-widest
+                             uppercase text-muted-foreground mb-2">
+                Targeting
+              </p>
+              <div className="flex flex-col gap-1">
+                {["Juspay", "Innovaccer", "Cashfree", "Setu"].map((co) => (
+                  <span key={co}
+                        className="text-sm text-foreground/70 font-light">
+                    {co}
+                  </span>
+                ))}
+              </div>
+            </div> */}
+          </motion.div>
+
+        </div>
+      </div>
+
+      {/* Tech marquee strip */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+        className="relative w-full overflow-hidden border-y border-border/40
+                   bg-card/30 backdrop-blur-sm mt-8 py-3"
+      >
+        <div className="flex animate-[marquee_30s_linear_infinite] whitespace-nowrap">
+          {[...TECH_MARQUEE, ...TECH_MARQUEE].map((tech, i) => (
+            <span key={i}
+                  className="font-mono-custom text-[11px] tracking-widest
+                             uppercase text-muted-foreground/60 mx-6">
+              {tech}
+              <span className="mx-6 text-[#78355b]/40">·</span>
+            </span>
+          ))}
+        </div>
+      </motion.div>
+
+    </section>
+  );
+}
+
+===== ./components/Contact.tsx =====
+"use client";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Button } from "./ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { ContactAction } from "@/actions/actions";
+import { useToast } from "./ui/use-toast";
+import { Loader2, Send, Mail, Github, Linkedin } from "lucide-react";
+
+const contactSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Valid email required." }),
+  message: z.string().min(5, { message: "Message must be at least 5 characters." }),
+});
+export type contactData = z.infer<typeof contactSchema>;
+
+const SOCIALS = [
+  {
+    label: "GitHub",
+    handle: "AakashTyagi354",
+    href: "https://github.com/AakashTyagi354",
+    icon: Github,
+  },
+  {
+    label: "LinkedIn",
+    handle: "aakash-tyagi",
+    href: "https://www.linkedin.com/in/aakash-tyagi-274228206/",
+    icon: Linkedin,
+  },
+  {
+    label: "Email",
+    handle: "aakashtyagi354@gmail.com",
+    href: "mailto:aakashtyagi354@gmail.com",
+    icon: Mail,
+  },
+];
+
+export default function Contact() {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const {
+    handleSubmit, register,
+    formState: { errors },
+    reset,
+  } = useForm<contactData>({ resolver: zodResolver(contactSchema) });
+
+  async function onSubmit(values: contactData) {
+    setLoading(true);
+    try {
+      const res = await ContactAction(values);
+      const response = JSON.parse(res);
+      setTimeout(() => {
+        if (response.status === "success") {
+          toast({ title: "Message sent!" });
+          reset();
+        } else {
+          toast({ title: "Something went wrong.", variant: "destructive" });
+        }
+        setLoading(false);
+      }, 1500);
+    } catch {
+      setLoading(false);
+      toast({ title: "Something went wrong.", variant: "destructive" });
+    }
+  }
+
+  return (
+    <section id="contact" className="max-w-[1100px] mx-auto px-6 py-24">
+
+      {/* Section header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="mb-14"
+      >
+        <p className="font-mono-custom text-xs tracking-[0.2em] uppercase
+                      text-[#78355b] mb-3">
+          03 — Contact
+        </p>
+        <h2 className="font-display text-4xl md:text-5xl text-foreground">
+          Get in touch
+        </h2>
+        <p className="mt-3 text-muted-foreground max-w-[440px] leading-relaxed">
+          Open to product company roles. Reach me directly or use the form.
+        </p>
+      </motion.div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-10">
+
+        {/* Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-5"
+          >
+            <div>
+              <Input
+                {...register("name")}
+                placeholder="Your name"
+                className="bg-card/50 border-border/80 h-12 rounded-xl
+                           font-body placeholder:text-muted-foreground/50
+                           focus-visible:ring-[#78355b]/30
+                           focus-visible:border-[#78355b]/40"
+              />
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1.5 font-mono-custom">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Input
+                {...register("email")}
+                placeholder="your@email.com"
+                type="email"
+                className="bg-card/50 border-border/80 h-12 rounded-xl
+                           font-body placeholder:text-muted-foreground/50
+                           focus-visible:ring-[#78355b]/30
+                           focus-visible:border-[#78355b]/40"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1.5 font-mono-custom">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Textarea
+                {...register("message")}
+                placeholder="What's on your mind?"
+                className="h-[140px] bg-card/50 border-border/80 rounded-xl
+                           font-body placeholder:text-muted-foreground/50
+                           focus-visible:ring-[#78355b]/30
+                           focus-visible:border-[#78355b]/40 resize-none"
+              />
+              {errors.message && (
+                <p className="text-red-500 text-xs mt-1.5 font-mono-custom">
+                  {errors.message.message}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-12 rounded-xl bg-[#78355b] hover:bg-[#5e2947]
+                         text-white font-medium flex items-center gap-2
+                         transition-colors w-full md:w-auto md:px-8"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <>
+                  <Send size={15} />
+                  Send message
+                </>
+              )}
+            </Button>
+          </form>
+        </motion.div>
+
+        {/* Socials sidebar */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex flex-col gap-3"
+        >
+          {SOCIALS.map((social) => {
+            const Icon = social.icon;
+            return (
+              <a
+                key={social.label}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 border border-border/80
+                           rounded-xl p-4 bg-card/50 backdrop-blur-sm
+                           card-hover group"
+              >
+                <div className="w-9 h-9 rounded-lg border border-border/80
+                                flex items-center justify-center flex-shrink-0
+                                group-hover:border-[#78355b]/40 transition-colors">
+                  <Icon size={16} className="text-muted-foreground
+                                             group-hover:text-[#78355b]
+                                             transition-colors" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-mono-custom text-[10px] tracking-widest
+                                 uppercase text-muted-foreground/60 mb-0.5">
+                    {social.label}
+                  </p>
+                  <p className="text-sm text-foreground/80 truncate">
+                    {social.handle}
+                  </p>
+                </div>
+              </a>
+            );
+          })}
+
+          {/* Availability badge */}
+          <div className="border border-emerald-500/20 rounded-xl p-4
+                          bg-emerald-500/5 mt-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-mono-custom text-[10px] tracking-widest
+                               uppercase text-emerald-600 dark:text-emerald-400">
+                Available
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Open to full-time SDE roles at product companies.
+            </p>
+          </div>
+        </motion.div>
+
+      </div>
+
+      {/* Footer */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mt-20 pt-8 border-t border-border/40 flex items-center
+                   justify-between flex-wrap gap-4"
+      >
+        <p className="font-mono-custom text-xs text-muted-foreground/50
+                      tracking-widest">
+          © 2026 Aakash Tyagi
+        </p>
+        <p className="font-mono-custom text-xs text-muted-foreground/50
+                      tracking-widest">
+          Built with Next.js · Deployed on aakashtyagi.in
+        </p>
+      </motion.div>
+
+    </section>
+  );
+}
+
+===== ./components/Header.tsx =====
+"use client";
+import { useTheme } from "next-themes";
+import { Moon, Sun, Download, Terminal, Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
+
+const NAV_LINKS = [
+  { label: "work",    hash: "projects" },
+  { label: "skills",  hash: "skills"   },
+  { label: "contact", hash: "contact"  },
+];
+
+export default function Header() {
+  const { setTheme } = useTheme();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // If on home page — scroll to section directly
+  // If on any other page (e.g. /projects/delma) — navigate to home with hash
+  const handleNavClick = (hash: string) => {
+    setMobileOpen(false);
+    if (pathname === "/") {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      router.push(`/#${hash}`);
+    }
+  };
+
+  return (
+    <>
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="h-[72px] w-full fixed z-50 top-0
+                   bg-background/80 backdrop-blur-md
+                   border-b border-border/60"
+      >
+        <div className="max-w-[1100px] h-full mx-auto px-6
+                        flex items-center justify-between">
+
+          {/* Brand mark */}
+          <button
+            onClick={() => {
+              setMobileOpen(false);
+              if (pathname === "/") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              } else {
+                router.push("/");
+              }
+            }}
+            className="flex items-center gap-2 group"
+          >
+            <Terminal
+              size={16}
+              className="text-[#78355b] group-hover:rotate-12
+                         transition-transform duration-300"
+            />
+            <span className="font-mono-custom text-sm font-medium
+                             tracking-widest text-foreground/80
+                             group-hover:text-[#78355b] transition-colors">
+              aakash.dev
+            </span>
+          </button>
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-8">
+            {NAV_LINKS.map((link) => (
+              <button
+                key={link.hash}
+                onClick={() => handleNavClick(link.hash)}
+                className="font-mono-custom text-xs tracking-widest
+                           text-muted-foreground hover:text-[#78355b]
+                           transition-colors uppercase"
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Desktop actions */}
+          <div className="hidden md:flex items-center gap-3">
+            <a
+              href="/Aakash_Tyagi.pdf"
+              download="Aakash_Tyagi.pdf"
+              className="flex items-center gap-1.5 font-mono-custom text-xs
+                         tracking-wider text-muted-foreground
+                         hover:text-[#78355b] transition-colors border
+                         border-border/80 hover:border-[#78355b]/40
+                         px-3 py-1.5 rounded-md"
+            >
+              <Download size={12} />
+              resume
+            </a>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon"
+                        className="h-8 w-8 rounded-md hover:bg-muted">
+                  <Sun className="h-3.5 w-3.5 rotate-0 scale-100
+                                  transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0
+                                   transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end"
+                                   className="font-mono-custom text-xs">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  system
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Mobile right side — theme + hamburger */}
+          <div className="flex md:hidden items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon"
+                        className="h-8 w-8 rounded-md hover:bg-muted">
+                  <Sun className="h-3.5 w-3.5 rotate-0 scale-100
+                                  transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0
+                                   transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end"
+                                   className="font-mono-custom text-xs">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  system
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-2 rounded-md hover:bg-muted transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileOpen
+                ? <X size={18} className="text-foreground" />
+                : <Menu size={18} className="text-foreground" />
+              }
+            </button>
+          </div>
+
+        </div>
+      </motion.header>
+
+      {/* Mobile menu overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-[72px] left-0 right-0 z-40
+                       bg-background/95 backdrop-blur-md
+                       border-b border-border/60 md:hidden"
+          >
+            <nav className="max-w-[1100px] mx-auto px-6 py-6
+                            flex flex-col gap-1">
+              {NAV_LINKS.map((link) => (
+                <button
+                  key={link.hash}
+                  onClick={() => handleNavClick(link.hash)}
+                  className="font-mono-custom text-sm tracking-widest
+                             uppercase text-muted-foreground
+                             hover:text-[#78355b] transition-colors
+                             py-3 border-b border-border/40
+                             last:border-0 text-left w-full"
+                >
+                  {link.label}
+                </button>
+              ))}
+
+              {/* Resume link in mobile menu */}
+              <a
+                href="/Aakash_Tyagi.pdf"
+                download="Aakash_Tyagi.pdf"
+                onClick={() => setMobileOpen(false)}
+                className="font-mono-custom text-sm tracking-widest
+                           uppercase text-[#78355b] py-3 flex
+                           items-center gap-2 mt-1"
+              >
+                <Download size={13} />
+                resume
+              </a>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+===== ./components/SkillsTwo.tsx =====
+"use client";
+import { motion } from "framer-motion";
+
+const SKILL_GROUPS = [
+  {
+    category: "Backend",
+    color: "text-blue-500 dark:text-blue-400",
+    dot: "bg-blue-500",
+    skills: [
+      "Java 21", "Spring Boot 4", "Spring Cloud Gateway",
+      "Eureka", "OpenFeign", "Resilience4j",
+      "Hibernate 7", "JPA", "REST APIs", "Node.js",
+    ],
+  },
+  {
+    category: "AI & LLM",
+    color: "text-[#78355b] dark:text-[#c4869f]",
+    dot: "bg-[#78355b]",
+    skills: [
+      "Groq", "Voyage AI", "pgvector", "Spring AI",
+      "RAG Pipelines", "MCP Agent (ReAct)",
+      "Agentic Workflows", "Prompt Engineering",
+      "llama-3.1", "qwen3-32b",
+    ],
+  },
+  {
+    category: "Frontend",
+    color: "text-emerald-600 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+    skills: [
+      "Next.js 14", "React.js", "TypeScript",
+      "Redux Toolkit", "Tailwind CSS", "JavaScript",
+      "Framer Motion", "HTML5", "CSS3",
+    ],
+  },
+  {
+    category: "Infra & DevOps",
+    color: "text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-500",
+    skills: [
+      "Apache Kafka", "Redis", "PostgreSQL",
+      "pgvector", "AWS S3", "Docker",
+      "Docker Compose", "GitHub Actions CI/CD",
+      "Kubernetes", "Maven", "Oracle DB", "Git",
+    ],
+  },
+];
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden:  { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
+
+export default function SkillsTwo() {
+  return (
+    <section
+      id="skills"
+      className="max-w-[1100px] mx-auto px-6 py-24"
+    >
+      {/* Section header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="mb-14"
+      >
+        <p className="font-mono-custom text-xs tracking-[0.2em] uppercase
+                      text-[#78355b] mb-3">
+          02 — Capabilities
+        </p>
+        <h2 className="font-display text-4xl md:text-5xl text-foreground">
+          Skills & Stack
+        </h2>
+        <p className="mt-3 text-muted-foreground max-w-[480px] leading-relaxed">
+          Everything I use to ship — from JVM internals to LLM prompt engineering.
+        </p>
+      </motion.div>
+
+      {/* Skill groups grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {SKILL_GROUPS.map((group, gi) => (
+          <motion.div
+            key={group.category}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: gi * 0.1 }}
+            className="border border-border/80 rounded-2xl p-6
+                       bg-card/50 backdrop-blur-sm card-hover"
+          >
+            {/* Category header */}
+            <div className="flex items-center gap-2 mb-5">
+              <span className={`w-2 h-2 rounded-full ${group.dot}`} />
+              <span className={`font-mono-custom text-xs tracking-widest
+                               uppercase font-medium ${group.color}`}>
+                {group.category}
+              </span>
+            </div>
+
+            {/* Pills */}
+            <motion.div
+              className="flex flex-wrap gap-2"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {group.skills.map((skill) => (
+                <motion.span
+                  key={skill}
+                  variants={itemVariants}
+                  className="skill-pill font-mono-custom text-[11px] tracking-wider
+                             px-3 py-1.5 rounded-full border border-border/80
+                             text-muted-foreground bg-background/60"
+                >
+                  {skill}
+                </motion.span>
+              ))}
+            </motion.div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Currently learning strip */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mt-6 border border-border/60 rounded-2xl p-5
+                   bg-card/30 flex flex-wrap items-center gap-3"
+      >
+        <span className="font-mono-custom text-[10px] tracking-widest
+                         uppercase text-muted-foreground/60 mr-2">
+          Also know
+        </span>
+        {["Kubernetes (learning)", "k6 Load Testing", "Multi-arch Docker (amd64+arm64)",
+          "Optimistic Locking (@Version)", "JWT + Refresh Token Rotation",
+          "ZEGOCLOUD Video", "Razorpay HMAC Verification"].map((item) => (
+          <span
+            key={item}
+            className="font-mono-custom text-[11px] text-muted-foreground/70
+                       border border-border/40 px-3 py-1 rounded-full"
+          >
+            {item}
+          </span>
+        ))}
+      </motion.div>
+
+    </section>
+  );
+}
+
+===== ./package.json =====
+{
+  "name": "portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-toast": "^1.1.5",
+    "@types/mongoose": "^5.11.97",
+    "@types/react-vertical-timeline-component": "^3.3.6",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.0.20",
+    "lucide-react": "^0.376.0",
+    "mongoose": "^8.3.3",
+    "next": "14.1.4",
+    "next-themes": "^0.3.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hook-form": "^7.51.3",
+    "react-icons": "^5.1.0",
+    "react-vertical-timeline-component": "^3.6.0",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.4",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
+}
+
+
+===== ./actions/actions.ts =====
+"use server";
+
+import { contactData } from "@/components/Contact";
+import connectDB from "@/lib/conncetDB";
+import ContactUS from "@/schema/contact";
+import { NextResponse } from "next/server";
+
+export const ContactAction = async (values: contactData) => {
+  try {
+    await connectDB();
+    const newContactUS = await ContactUS.create({
+      Name: values.name,
+      Email: values.email,
+      Message: values.message,
+    });
+    await newContactUS.save();
+    console.log(newContactUS);
+    const data = {
+      status: "success",
+      message: "Message Send Successfully",
+    };
+    return JSON.stringify(data);
+  } catch (err) {
+    console.log(err);
+    const errData = {
+      status: "faild",
+      message: "Message Faild",
+    };
+    return JSON.stringify(errData);
+  }
+};
+
+
+===== ./lib/data.ts =====
+import React from "react";
+import { CgWorkAlt } from "react-icons/cg";
+import { LuGraduationCap } from "react-icons/lu";
+import { FaServer } from "react-icons/fa";
+
+import project1 from "@/public/images/project1.png";
+import project2 from "@/public/images/project2.png";
+
+// ─────────────────────────────────────────────────────────────
+// NAV LINKS
+// ─────────────────────────────────────────────────────────────
+export const links = [
+  { name: "Home",     hash: "#home"     },
+  { name: "Skills",   hash: "#skills"   },
+  { name: "Projects", hash: "#projects" },
+  { name: "Contact",  hash: "#contact"  },
+] as const;
+
+// ─────────────────────────────────────────────────────────────
+// EXPERIENCE
+// ─────────────────────────────────────────────────────────────
+export const experiencesData = [
+  {
+    title: "B.Tech — Computer Science",
+    location: "India",
+    description:
+      "Graduated with a CS degree. Smart India Hackathon finalist. Maharashtra Innovation Challenge district winner.",
+    icon: React.createElement(LuGraduationCap),
+    date: "2024",
+  },
+  {
+    title: "Specialist Programmer",
+    location: "Infosys · Pune",
+    description:
+      "Working as a Specialist Programmer. 1.5 years Spring Boot experience building backend systems.",
+    icon: React.createElement(CgWorkAlt),
+    date: "2024 – present",
+  },
+  {
+    title: "Building Delma",
+    location: "Side Project",
+    description:
+      "13 Spring Boot microservices, RAG pipeline (pgvector + Voyage AI), MCP booking agent (ReAct), post-consultation AI report generation via Groq.",
+    icon: React.createElement(FaServer),
+    date: "2024 – present",
+  },
+] as const;
+
+// ─────────────────────────────────────────────────────────────
+// PROJECTS
+// ─────────────────────────────────────────────────────────────
+export const projectsData = [
+  {
+    title: "Delma",
+    description:
+      "AI healthcare platform. 13 Spring Boot microservices — Spring Cloud Gateway, Eureka, Kafka, Redis, pgvector. RAG document summarization, MCP booking agent (ReAct), post-consultation AI report generation via Groq. CI/CD with GitHub Actions multi-arch Docker builds.",
+    tags: [
+      "Spring Boot",
+      "Kafka",
+      "Redis",
+      "pgvector",
+      "Groq",
+      "Next.js 14",
+      "TypeScript",
+      "Docker",
+    ],
+    imageUrl: project1,
+    live: "https://delma.aakashtyagi.in",
+    code: "https://github.com/AakashTyagi354/delma2.0_spring_microservice",
+  },
+  {
+    title: "MindCraftAI",
+    description:
+      "Platform integrating multiple AI tools — AI-powered code generation, video and music generation. Built with Next.js 14, TypeScript, and OpenAI APIs.",
+    tags: ["Next.js", "TypeScript", "OpenAI", "Tailwind", "MySQL"],
+    imageUrl: project2,
+    live: "https://mind-craft-f4u8lqqbo-aakashtyagi354.vercel.app/",
+    code: "https://github.com/AakashTyagi354/MindCraftAi",
+  },
+] as const;
+
+// ─────────────────────────────────────────────────────────────
+// SKILLS
+// Grouped by domain — matches actual resume line
+// ─────────────────────────────────────────────────────────────
+import java    from "../public/images/java.png";
+import js      from "../public/images/js.png";
+import ts      from "../public/images/ts2.png";
+import react   from "../public/images/react.png";
+import nextjs  from "../public/images/nextjs2.svg";
+import redux   from "../public/images/redux.png";
+import tailwind from "../public/images/tailwind.png";
+import docker  from "../public/images/docker.png";
+import git     from "../public/images/git.png";
+import postgres from "../public/images/postgres.png";
+import redis   from "../public/images/redis2.png";
+import nodejs  from "../public/images/nodejs.png";
+import html    from "../public/images/html.png";
+import css     from "../public/images/css.png";
+
+export const skillsData = [
+  // Languages
+  { title: "Java",        img: java,      category: "Backend"  },
+  { title: "TypeScript",  img: ts,        category: "Frontend" },
+  { title: "JavaScript",  img: js,        category: "Frontend" },
+
+  // Backend
+  { title: "Spring Boot", img: java,      category: "Backend"  },
+  { title: "Node.js",     img: nodejs,    category: "Backend"  },
+
+  // Frontend
+  { title: "Next.js 14",  img: nextjs,    category: "Frontend" },
+  { title: "React",       img: react,     category: "Frontend" },
+  { title: "Redux",       img: redux,     category: "Frontend" },
+  { title: "Tailwind",    img: tailwind,  category: "Frontend" },
+
+  // Database & Cache
+  { title: "PostgreSQL",  img: postgres,  category: "Database" },
+  { title: "Redis",       img: redis,     category: "Database" },
+
+  // DevOps
+  { title: "Docker",      img: docker,    category: "DevOps"   },
+  { title: "Git",         img: git,       category: "DevOps"   },
+
+  // Web basics
+  { title: "HTML",        img: html,      category: "Frontend" },
+  { title: "CSS",         img: css,       category: "Frontend" },
+];
+
+===== ./lib/utils.ts =====
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+
+===== ./lib/conncetDB.ts =====
+import mongoose from "mongoose";
+
+async function connectDB() {
+  const url = process.env.MONGO_URI || "";
+  try {
+    await mongoose.connect(url);
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.error("Error connecting to MongoDB:", error);
+  }
+}
+
+export default connectDB;
+
+
+===== ./components.json =====
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.ts",
+    "css": "app/globals.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  }
+}
+
+===== ./tsconfig.json =====
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+
+===== ./postcss.config.js =====
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+
+===== ./.eslintrc.json =====
+{
+  "extends": "next/core-web-vitals"
+}

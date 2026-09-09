@@ -14,8 +14,8 @@ const SKILL_GROUPS = [
   },
   {
     category: "AI & LLM",
-    color: "text-brand dark:text-brand-mid",
-    dot: "bg-brand",
+    color: "text-[#78355b] dark:text-[#c4869f]",
+    dot: "bg-[#78355b]",
     skills: [
       "Groq", "Voyage AI", "pgvector", "Spring AI",
       "RAG Pipelines", "MCP Agent (ReAct)",
@@ -71,7 +71,7 @@ export default function SkillsTwo() {
         className="mb-14"
       >
         <p className="font-mono-custom text-xs tracking-[0.2em] uppercase
-                      text-brand mb-3">
+                      text-[#78355b] mb-3">
           02 — Capabilities
         </p>
         <h2 className="font-display text-4xl md:text-5xl text-foreground">

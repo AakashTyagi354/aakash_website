@@ -63,12 +63,12 @@ export default function Header() {
           >
             <Terminal
               size={16}
-              className="text-brand group-hover:rotate-12
+              className="text-[#78355b] group-hover:rotate-12
                          transition-transform duration-300"
             />
             <span className="font-mono-custom text-sm font-medium
                              tracking-widest text-foreground/80
-                             group-hover:text-brand transition-colors">
+                             group-hover:text-[#78355b] transition-colors">
               aakash.dev
             </span>
           </button>
@@ -80,7 +80,7 @@ export default function Header() {
                 key={link.hash}
                 onClick={() => handleNavClick(link.hash)}
                 className="font-mono-custom text-xs tracking-widest
-                           text-muted-foreground hover:text-brand
+                           text-muted-foreground hover:text-[#78355b]
                            transition-colors uppercase"
               >
                 {link.label}
@@ -95,8 +95,8 @@ export default function Header() {
               download="Aakash_Tyagi.pdf"
               className="flex items-center gap-1.5 font-mono-custom text-xs
                          tracking-wider text-muted-foreground
-                         hover:text-brand transition-colors border
-                         border-border/80 hover:border-brand/40
+                         hover:text-[#78355b] transition-colors border
+                         border-border/80 hover:border-[#78355b]/40
                          px-3 py-1.5 rounded-md"
             >
               <Download size={12} />
@@ -191,7 +191,7 @@ export default function Header() {
                   onClick={() => handleNavClick(link.hash)}
                   className="font-mono-custom text-sm tracking-widest
                              uppercase text-muted-foreground
-                             hover:text-brand transition-colors
+                             hover:text-[#78355b] transition-colors
                              py-3 border-b border-border/40
                              last:border-0 text-left w-full"
                 >
@@ -205,7 +205,7 @@ export default function Header() {
                 download="Aakash_Tyagi.pdf"
                 onClick={() => setMobileOpen(false)}
                 className="font-mono-custom text-sm tracking-widest
-                           uppercase text-brand py-3 flex
+                           uppercase text-[#78355b] py-3 flex
                            items-center gap-2 mt-1"
               >
                 <Download size={13} />

@@ -5,7 +5,7 @@ import { Github, Linkedin, ExternalLink, ArrowRight } from "lucide-react";
 const STATS = [
   { value: "13",        label: "Microservices"     },
   { value: "4",         label: "AI Features"       },
-  { value: "2yr",     label: "Spring Boot"       }
+  { value: "1.5yr",     label: "Spring Boot"       }
 ];
 
 const TECH_MARQUEE = [
@@ -45,7 +45,7 @@ export default function Info() {
               transition={{ duration: 0.5 }}
               className="flex items-center gap-2 mb-8"
             >
-              <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#78355b] animate-pulse" />
               <span className="font-mono-custom text-xs tracking-[0.2em] uppercase
                                text-muted-foreground">
                 Specialist Programmer · Infosys · Pune
@@ -103,7 +103,7 @@ export default function Info() {
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="font-mono-custom text-[10px] tracking-widest
-                                     uppercase text-brand">
+                                     uppercase text-[#78355b]">
                       Featured Project
                     </span>
                   </div>
@@ -120,7 +120,7 @@ export default function Info() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-shrink-0 p-2 rounded-lg border border-border/60
-                             hover:border-brand/40 hover:text-brand
+                             hover:border-[#78355b]/40 hover:text-[#78355b]
                              text-muted-foreground transition-all"
                 >
                   <ExternalLink size={16} />
@@ -131,8 +131,8 @@ export default function Info() {
                   <span
                     key={t}
                     className="font-mono-custom text-[10px] px-2 py-0.5
-                               bg-brand/[0.08] text-brand dark:text-brand-mid
-                               border border-brand/20 rounded-full"
+                               bg-[#78355b]/08 text-[#78355b] dark:text-[#c4869f]
+                               border border-[#78355b]/20 rounded-full"
                   >
                     {t}
                   </span>
@@ -150,8 +150,8 @@ export default function Info() {
               <a
                 href="#projects"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg
-                           bg-brand text-white text-sm font-medium
-                           hover:bg-brand-dark transition-colors"
+                           bg-[#78355b] text-white text-sm font-medium
+                           hover:bg-[#5e2947] transition-colors"
               >
                 View Work
                 <ArrowRight size={14} />
@@ -162,7 +162,7 @@ export default function Info() {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg
                            border border-border/80 text-sm text-muted-foreground
-                           hover:border-brand/40 hover:text-brand
+                           hover:border-[#78355b]/40 hover:text-[#78355b]
                            transition-colors"
               >
                 <Github size={14} />
@@ -174,7 +174,7 @@ export default function Info() {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg
                            border border-border/80 text-sm text-muted-foreground
-                           hover:border-brand/40 hover:text-brand
+                           hover:border-[#78355b]/40 hover:text-[#78355b]
                            transition-colors"
               >
                 <Linkedin size={14} />
@@ -244,7 +244,7 @@ export default function Info() {
                   className="font-mono-custom text-[11px] tracking-widest
                              uppercase text-muted-foreground/60 mx-6">
               {tech}
-              <span className="mx-6 text-brand/40">·</span>
+              <span className="mx-6 text-[#78355b]/40">·</span>
             </span>
           ))}
         </div>

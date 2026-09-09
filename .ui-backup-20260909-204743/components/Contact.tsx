@@ -80,7 +80,7 @@ export default function Contact() {
         className="mb-14"
       >
         <p className="font-mono-custom text-xs tracking-[0.2em] uppercase
-                      text-brand mb-3">
+                      text-[#78355b] mb-3">
           03 — Contact
         </p>
         <h2 className="font-display text-4xl md:text-5xl text-foreground">
@@ -109,9 +109,9 @@ export default function Contact() {
                 {...register("name")}
                 placeholder="Your name"
                 className="bg-card/50 border-border/80 h-12 rounded-xl
-                           font-body placeholder:text-muted-foreground/70
-                           focus-visible:ring-brand/30
-                           focus-visible:border-brand/40"
+                           font-body placeholder:text-muted-foreground/50
+                           focus-visible:ring-[#78355b]/30
+                           focus-visible:border-[#78355b]/40"
               />
               {errors.name && (
                 <p className="text-red-500 text-xs mt-1.5 font-mono-custom">
@@ -126,9 +126,9 @@ export default function Contact() {
                 placeholder="your@email.com"
                 type="email"
                 className="bg-card/50 border-border/80 h-12 rounded-xl
-                           font-body placeholder:text-muted-foreground/70
-                           focus-visible:ring-brand/30
-                           focus-visible:border-brand/40"
+                           font-body placeholder:text-muted-foreground/50
+                           focus-visible:ring-[#78355b]/30
+                           focus-visible:border-[#78355b]/40"
               />
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1.5 font-mono-custom">
@@ -142,9 +142,9 @@ export default function Contact() {
                 {...register("message")}
                 placeholder="What's on your mind?"
                 className="h-[140px] bg-card/50 border-border/80 rounded-xl
-                           font-body placeholder:text-muted-foreground/70
-                           focus-visible:ring-brand/30
-                           focus-visible:border-brand/40 resize-none"
+                           font-body placeholder:text-muted-foreground/50
+                           focus-visible:ring-[#78355b]/30
+                           focus-visible:border-[#78355b]/40 resize-none"
               />
               {errors.message && (
                 <p className="text-red-500 text-xs mt-1.5 font-mono-custom">
@@ -156,7 +156,7 @@ export default function Contact() {
             <Button
               type="submit"
               disabled={loading}
-              className="h-12 rounded-xl bg-brand hover:bg-brand-dark
+              className="h-12 rounded-xl bg-[#78355b] hover:bg-[#5e2947]
                          text-white font-medium flex items-center gap-2
                          transition-colors w-full md:w-auto md:px-8"
             >
@@ -194,9 +194,9 @@ export default function Contact() {
               >
                 <div className="w-9 h-9 rounded-lg border border-border/80
                                 flex items-center justify-center flex-shrink-0
-                                group-hover:border-brand/40 transition-colors">
+                                group-hover:border-[#78355b]/40 transition-colors">
                   <Icon size={16} className="text-muted-foreground
-                                             group-hover:text-brand
+                                             group-hover:text-[#78355b]
                                              transition-colors" />
                 </div>
                 <div className="min-w-0">
@@ -239,11 +239,11 @@ export default function Contact() {
         className="mt-20 pt-8 border-t border-border/40 flex items-center
                    justify-between flex-wrap gap-4"
       >
-        <p className="font-mono-custom text-xs text-muted-foreground/70
+        <p className="font-mono-custom text-xs text-muted-foreground/50
                       tracking-widest">
           © 2026 Aakash Tyagi
         </p>
-        <p className="font-mono-custom text-xs text-muted-foreground/70
+        <p className="font-mono-custom text-xs text-muted-foreground/50
                       tracking-widest">
           Built with Next.js · Deployed on aakashtyagi.in
         </p>

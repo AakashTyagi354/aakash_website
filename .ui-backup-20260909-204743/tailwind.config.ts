@@ -17,9 +17,9 @@ const config = {
     },
     extend: {
       fontFamily: {
-        display: ["var(--font-dm-serif)", "serif"],
-        mono: ["var(--font-jetbrains)", "monospace"],
-        body:  ["var(--font-sora)", "sans-serif"],
+        display: ["DM Serif Display", "serif"],
+        mono: ["JetBrains Mono", "monospace"],
+        body:  ["Sora", "sans-serif"],
       },
       colors: {
         border:      "hsl(var(--border))",
@@ -35,8 +35,6 @@ const config = {
         popover:     { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card:        { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
         brand:       "#78355b",
-        "brand-dark": "#5e2947",
-        "brand-mid":  "#c4869f",
       },
       borderRadius: {
         lg: "var(--radius)",
